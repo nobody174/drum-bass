@@ -17,6 +17,16 @@ Drum learning PWA for an Alesis Nitro Max e-drum kit (Android, Chrome, Web MIDI)
 - Reports and investigation notes go in `docs/` as `.md` files; keep chat summaries to a short TL;DR.
 - Develop without the physical kit using the virtual drum input (keyboard and on-screen pads).
 
+## Order of work
+
+1. Read `SPEC.md` fully, then `docs/agent-roles.md` (optional roles; pick what fits).
+2. **M0** — scaffold + HTTPS deploy so the app can be installed on the user's Android phone right away, plus a MIDI monitor and the virtual drum input (on-screen pads, keyboard). The user will first test **without the drum kit** on their own Android phone: install the PWA, check design, UI and UX, touch targets, landscape layout.
+3. **M1** — kit editor (choose pieces, drag and drop, lock, MIDI learn, presets). Must be fully usable with touch and without the kit.
+4. **M2** onward — follow `SPEC.md`, section 13. Clone Hero import is in M2.
+5. The real kit test (USB-OTG, MIDI notes, latency) happens later; log findings in `docs/`.
+
+After each milestone: short TL;DR in chat, details in `docs/`, and ask the user to test on the phone before continuing.
+
 ## Current status
 
-Spec only. Start with M0 and M1 (see `SPEC.md`, section 13).
+Spec only. No code yet. Start with M0 and M1.

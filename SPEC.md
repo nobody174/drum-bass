@@ -235,7 +235,7 @@ drum-trainer/
 
 ## 13. Milestones
 
-- **M0** — Scaffold (Vite/TS/Preact/PWA), MIDI monitor screen proving Nitro Max works over USB-OTG on the Android device.
+- **M0** — Scaffold (Vite/TS/Preact/PWA), deployed over HTTPS so it can be installed on the user's Android phone immediately; virtual drum input (on-screen pads + keyboard) for testing UI/UX without the kit; MIDI monitor screen (used later to prove the Nitro Max works over USB-OTG).
 - **M1** — Kit editor: piece selection, drag and drop, lock, presets, MIDI learn.
 - **M2** — Player with falling lanes: import one Clone Hero song folder (and plain GM .mid + audio as second path), audio-clock sync, scoring v1.
 - **M3** — Kit view mode (approach rings + light-up), mode switch, compare with nephew.
