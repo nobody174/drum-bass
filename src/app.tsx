@@ -3,6 +3,7 @@ import type { ComponentChildren } from "preact";
 import { OnScreenPads } from "./ui/OnScreenPads";
 import MidiMonitor from "./ui/MidiMonitor";
 import { Placeholder } from "./ui/Placeholder";
+import KitEditor from "./ui/KitEditor";
 
 const ROUTES = [
   { id: "library", label: "Library", icon: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" },
@@ -34,7 +35,7 @@ function Screen({ route }: { route: RouteId }): ComponentChildren {
     case "library":
       return <Placeholder title="Library" text="Your songs will live here. Clone Hero and MIDI import arrive in M2." />;
     case "kit":
-      return <Placeholder title="Kit" text="Kit editor comes in M1." />;
+      return <KitEditor />;
     case "pads":
       return <OnScreenPads />;
     case "monitor":
@@ -48,7 +49,7 @@ export function App() {
   const route = useHashRoute();
   return (
     <div class="shell">
-      <main class={`shell-main${route === "pads" ? " no-scroll" : ""}`}>
+      <main class={`shell-main${route === "pads" || route === "kit" ? " no-scroll" : ""}`}>
         <Screen route={route} />
       </main>
       <nav class="nav" aria-label="Main">

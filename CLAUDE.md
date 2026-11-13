@@ -29,4 +29,4 @@ After each milestone: short TL;DR in chat, details in `docs/`, and ask the user 
 
 ## Current status
 
-M0 code written (scaffold, MIDI monitor, virtual pads, PWA + Pages workflow). Awaiting phone test; next is M1 (kit editor). See docs/m0-*.md.
+M0 done and phone-tested. M1 kit editor written (drag, lock, MIDI learn, presets); awaiting phone test. Next: M2 (player + Clone Hero import). See docs/m1-*.md.
