@@ -2,7 +2,9 @@ import { useEffect, useState } from "preact/hooks";
 import type { ComponentChildren } from "preact";
 import { OnScreenPads } from "./ui/OnScreenPads";
 import MidiMonitor from "./ui/MidiMonitor";
-import { Placeholder } from "./ui/Placeholder";
+import Library from "./ui/Library";
+import PrePlay from "./ui/PrePlay";
+import Play from "./ui/Play";
 import KitEditor from "./ui/KitEditor";
 import Settings from "./ui/Settings";
 import { startSoundEngine } from "./audio";
@@ -17,12 +19,22 @@ const ROUTES = [
 
 type RouteId = (typeof ROUTES)[number]["id"];
 
-function currentRoute(): RouteId {
-  const id = location.hash.replace(/^#\/?/, "");
-  return ROUTES.some((r) => r.id === id) ? (id as RouteId) : "pads";
+interface Route {
+  id: RouteId | "song" | "play";
+  /** Song id for #/song/<id> (pre-play) and #/play/<id>?d=..&m=..&c=.. */
+  param?: string;
+  query: URLSearchParams;
 }
 
-function useHashRoute(): RouteId {
+function currentRoute(): Route {
+  const [path = "", qs = ""] = location.hash.replace(/^#\/?/, "").split("?");
+  const [head = "", rest] = path.split("/");
+  const query = new URLSearchParams(qs);
+  if ((head === "song" || head === "play") && rest) return { id: head, param: decodeURIComponent(rest), query };
+  return { id: ROUTES.some((r) => r.id === head) ? (head as RouteId) : "pads", query };
+}
+
+function useHashRoute(): Route {
   const [route, setRoute] = useState(currentRoute);
   useEffect(() => {
     const on = () => setRoute(currentRoute());
@@ -32,10 +44,14 @@ function useHashRoute(): RouteId {
   return route;
 }
 
-function Screen({ route }: { route: RouteId }): ComponentChildren {
-  switch (route) {
+function Screen({ route }: { route: Route }): ComponentChildren {
+  switch (route.id) {
     case "library":
-      return <Placeholder title="Library" text="Your songs will live here. Clone Hero and MIDI import arrive in M2." />;
+      return <Library />;
+    case "song":
+      return <PrePlay key={route.param} songId={route.param!} />;
+    case "play":
+      return <Play key={route.param} songId={route.param!} query={route.query} />;
     case "kit":
       return <KitEditor />;
     case "pads":
@@ -49,17 +65,20 @@ function Screen({ route }: { route: RouteId }): ComponentChildren {
 
 export function App() {
   const route = useHashRoute();
+  const playing = route.id === "play";
+  const navId = route.id === "song" || route.id === "play" ? "library" : route.id;
   useEffect(() => {
     startSoundEngine();
   }, []);
   return (
     <div class="shell">
-      <main class={`shell-main${route === "pads" || route === "kit" ? " no-scroll" : ""}`}>
+      <main class={`shell-main${route.id === "pads" || route.id === "kit" || playing ? " no-scroll" : ""}`}>
         <Screen route={route} />
       </main>
+      {!playing && (
       <nav class="nav" aria-label="Main">
         {ROUTES.map((r) => (
-          <a key={r.id} href={`#/${r.id}`} aria-current={route === r.id ? "page" : undefined}>
+          <a key={r.id} href={`#/${r.id}`} aria-current={navId === r.id ? "page" : undefined}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d={r.icon} />
             </svg>
@@ -67,6 +86,7 @@ export function App() {
           </a>
         ))}
       </nav>
+      )}
     </div>
   );
 }

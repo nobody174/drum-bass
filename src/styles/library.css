@@ -1,0 +1,23 @@
+.lib { display: grid; gap: 10px; max-width: 900px; }
+.lib-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.lib-head h1 { margin: 0; flex: 1; font-size: 1.8rem; }
+.lib-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.lib-hidden { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.lib-status { margin: 0; padding: 8px 12px; border-left: 4px solid var(--amber); background: rgba(255,184,48,.08); color: var(--text); font-size: .9rem; }
+.lib-status.err { border-color: var(--accent); background: rgba(229,35,43,.12); }
+.lib-status ul { margin: 4px 0 0; padding-left: 18px; }
+.lib-list { display: grid; gap: 8px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .lib-list { grid-template-columns: 1fr 1fr; } }
+.lib-song { display: flex; align-items: center; gap: 8px; padding: 8px 10px 8px 14px; min-width: 0; }
+.lib-main {
+  flex: 1; min-width: 0; min-height: var(--touch); text-align: left; background: none; border: 0; padding: 0; cursor: pointer;
+  display: grid; align-content: center; gap: 2px; color: inherit; touch-action: manipulation;
+}
+.lib-title { font-family: var(--font-sub); font-weight: 700; font-size: 1.05rem; text-transform: uppercase; letter-spacing: .06em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-artist { color: var(--muted); font-size: .85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lib-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: .72rem; color: var(--muted); }
+.lib-chip { padding: 0 6px; border: 1px solid var(--line); border-radius: 4px; text-transform: uppercase; letter-spacing: .06em; }
+.lib-best { color: var(--amber); font-family: var(--font-sub); }
+.lib-empty { text-align: center; padding: 20px 12px; }
+.lib-empty h2 { color: var(--accent-2); }
+.btn:focus-within{outline:3px solid var(--amber);outline-offset:2px}

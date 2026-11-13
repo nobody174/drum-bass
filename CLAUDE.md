@@ -29,4 +29,4 @@ After each milestone: short TL;DR in chat, details in `docs/`, and ask the user 
 
 ## Current status
 
-M0 done and phone-tested. M1 kit editor written (drag, lock, MIDI learn, presets); awaiting phone test. Next: M2 (player + Clone Hero import). See docs/m1-*.md.
+M0 and M1 done and phone-tested. M2 written (Clone Hero import, falling-lane player, scoring, library, synthetic demo song); awaiting phone test. Unverified: song.ini delay sign, RB note numbers and disco-flip events (need a real chart). See docs/m2-*.md.
