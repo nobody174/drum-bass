@@ -5,9 +5,10 @@ import {
   setLocked, setMirrored, setNote, uniqueName,
 } from "../kit";
 import type { KitPreset, NoteMatch, PieceId } from "../kit";
-import { inputBus } from "../midi";
+import { inputBus, startVirtualKeyboard, stopVirtualKeyboard } from "../midi";
 import type { DrumInputEvent } from "../midi";
 import { Stage, GRID_STEP } from "./kit/Stage";
+import { VirtualPads } from "./kit/VirtualPads";
 import { FlashStore } from "./kit/flash";
 import { PIECE_NAMES, zonesFor } from "./kit/zones";
 import "./kitEditor.css";
@@ -128,6 +129,12 @@ export default function KitEditor() {
       window.removeEventListener("pagehide", onHide);
     };
   }, [flush]);
+
+  // Keyboard keys (see Pads screen) also work here, for Learn and the flash test.
+  useEffect(() => {
+    startVirtualKeyboard();
+    return () => stopVirtualKeyboard();
+  }, []);
 
   // Monitor + test flash for every input event, from any source.
   useEffect(() => {
@@ -313,6 +320,13 @@ export default function KitEditor() {
           </div>
         </details>
 
+        <details class="ke-sec">
+          <summary>Virtual pads</summary>
+          <p class="muted ke-small">Simulate hits without the kit: tests the monitor and the flash{learn ? ", or answers the Learn that is listening" : ""}.</p>
+          {!learn && <VirtualPads />}
+          {learn && <p class="muted ke-small">Use the pads in the Listening box below.</p>}
+        </details>
+
         <details open class="ke-sec">
           <summary>Selected piece</summary>
           {!selected ? (
@@ -341,6 +355,11 @@ export default function KitEditor() {
                       <>
                         <span class="ke-listen" role="status">Listening... {learnLeft}s</span>
                         <button class="ke-btn" onClick={() => { setLearn(null); setLearnMsg(null); }}>Cancel</button>
+                        <div class="ke-learnbox">
+                          <p>Hit the real kit, press a keyboard key, or tap a pad below. The first hit is saved.</p>
+                          <p class="ke-vp-title">Tap a pad to simulate a hit</p>
+                          <VirtualPads />
+                        </div>
                       </>
                     ) : (
                       <>

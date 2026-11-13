@@ -13,11 +13,20 @@ Files: `src/ui/KitEditor.tsx`, `src/ui/kitEditor.css`, `src/ui/kit/{Stage.tsx,dr
 - **Keyboard/AT**: a "Select piece" button group selects pieces without the canvas, so Learn works without a pointer.
 - Layout: landscape (>=560px wide) = stage left, scrollable panel right; portrait = sticky stage on top, collapsible `<details>` sections below. Touch targets >= 48px, reduced motion honored (no scale/pulse), all listeners/RAF/timers cleaned up.
 
+## Learn without the kit (added after phone test)
+- `src/ui/kit/VirtualPads.tsx`: 14 touch pads (>=48px; starter GM notes + crash 2 = 57) and a custom note stepper (0-127, +/-, number input, Send), all emitting `inputBus.emit({note, velocity:100, channel:9, source:'pad'})`.
+- While Listening, the zone shows a "Hit the real kit, press a keyboard key, or tap a pad below" box with the pads inside it. A collapsible "Virtual pads" section (closed by default) offers the same pads outside learn to test the monitor and flash. The editor now starts the virtual keyboard too (stopped on unmount), so keyboard keys work here.
+- Lock still allows learn.
+
 ## Verified
 - `npx tsc --noEmit` passes.
 - Headless Chrome (CDP, real time) at 800x360 and 390x800 (mobile emulation): stage, toolbar, panel render correctly; default preset loaded from IndexedDB.
 
+- Headless Chrome (CDP, 800x360 and 390x800 mobile): select Snare, Learn, pads appear (14, none under 48px), a simulated Tom 1 tap saved note 48 to Snare head. `vitest` 65 pass.
+
 ## Not verified (needs a phone)
+Real touch on the new pads, keyboard keys in the editor, custom stepper by hand, the Virtual pads section outside learn.
+(Earlier list:)
 Actual drag, pinch, multi-touch, handle drag, learn flow, autosave persistence across reload, preset ops, flash on pad input (all logic exercised only by code review).
 
 ## Phone checklist
@@ -32,5 +41,4 @@ Actual drag, pinch, multi-touch, handle drag, learn flow, autosave persistence a
 9. New / duplicate / rename / delete (not last); reload keeps the active preset.
 
 ## Known gaps
-- Learning from on-screen pads needs a second device/keyboard since pads live on another route (could embed the pad row in the editor later).
 - Kick label overlaps the "drummer's seat" caption at default layout (cosmetic).
