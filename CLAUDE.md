@@ -29,4 +29,4 @@ After each milestone: short TL;DR in chat, details in `docs/`, and ask the user 
 
 ## Current status
 
-Spec only. No code yet. Start with M0 and M1.
+M0 code written (scaffold, MIDI monitor, virtual pads, PWA + Pages workflow). Awaiting phone test; next is M1 (kit editor). See docs/m0-*.md.

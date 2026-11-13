@@ -1,0 +1,7 @@
+node_modules
+dist
+dev-dist
+*.local
+# user-provided fixtures (copyrighted songs must never be committed)
+fixtures/local/
+.DS_Store

@@ -1,0 +1,92 @@
+/* Rock theme tokens and base styles (SPEC section 10). */
+:root {
+  --bg: #0d0d0f;
+  --panel: #1a1a1e;
+  --panel-2: #24242a;
+  --text: #f1efe9;
+  --muted: #8d8b94;
+  --accent: #e5232b;
+  --accent-2: #ff7a1a;
+  --amber: #ffb830;
+  --line: #3a3a42;
+
+  --c-kick: #ff7a1a;
+  --c-snare: #e5232b;
+  --c-tom1: #3b82f6;
+  --c-tom2: #14b8a6;
+  --c-tom3: #8b5cf6;
+  --c-tom4: #6366f1;
+  --c-hat: #f5d90a;
+  --c-crash: #22d3ee;
+  --c-ride: #e8f1f5;
+
+  --font-head: "Bebas Neue", "Oswald", Impact, sans-serif;
+  --font-sub: "Oswald", "Bebas Neue", sans-serif;
+  --font-body: "Inter Variable", Inter, system-ui, sans-serif;
+
+  --touch: 48px;
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+
+  /* Light SVG noise, inlined so it works offline. */
+  --noise: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='.07'/></svg>");
+  --scratch: repeating-linear-gradient(115deg, rgba(255,255,255,.025) 0 1px, transparent 1px 7px);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body {
+  background: var(--bg) var(--noise);
+  color: var(--text);
+  font: 16px/1.45 var(--font-body);
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+h1, h2, h3 {
+  font-family: var(--font-head);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  margin: 0 0 .4em;
+}
+h1 { font-size: 2.2rem; color: var(--accent-2); }
+h2 { font-size: 1.5rem; }
+p { margin: 0 0 .8em; color: var(--muted); }
+button { font: inherit; color: inherit; }
+
+/* Riveted metal panel */
+.panel {
+  position: relative;
+  background: var(--scratch), var(--noise), linear-gradient(180deg, var(--panel-2), var(--panel));
+  border: 2px solid var(--line);
+  border-radius: 10px;
+  padding: 16px 18px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 4px 14px rgba(0,0,0,.5);
+}
+.panel::before, .panel::after {
+  content: ""; position: absolute; top: 6px; width: 6px; height: 6px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8a8a92, #2a2a30);
+}
+.panel::before { left: 6px; }
+.panel::after { right: 6px; }
+
+/* Guitar-pedal primary button */
+.pedal {
+  min-height: var(--touch); min-width: var(--touch);
+  padding: 0 22px;
+  font-family: var(--font-sub); font-weight: 700; text-transform: uppercase; letter-spacing: .12em;
+  background: linear-gradient(180deg, #ff4a3a, var(--accent) 55%, #a8151b);
+  border: 2px solid #5c0b0f; border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 4px 0 #5c0b0f, 0 6px 10px rgba(0,0,0,.5);
+  cursor: pointer; touch-action: manipulation;
+  transition: transform .08s, box-shadow .08s;
+}
+.pedal:active { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 1px 0 #5c0b0f; }
+
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
