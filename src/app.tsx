@@ -4,6 +4,8 @@ import { OnScreenPads } from "./ui/OnScreenPads";
 import MidiMonitor from "./ui/MidiMonitor";
 import { Placeholder } from "./ui/Placeholder";
 import KitEditor from "./ui/KitEditor";
+import Settings from "./ui/Settings";
+import { startSoundEngine } from "./audio";
 
 const ROUTES = [
   { id: "library", label: "Library", icon: "M9 18V5l12-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm12-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0z" },
@@ -41,12 +43,15 @@ function Screen({ route }: { route: RouteId }): ComponentChildren {
     case "monitor":
       return <MidiMonitor />;
     case "settings":
-      return <Placeholder title="Settings" text="Latency calibration, audio and display options will appear here." />;
+      return <Settings />;
   }
 }
 
 export function App() {
   const route = useHashRoute();
+  useEffect(() => {
+    startSoundEngine();
+  }, []);
   return (
     <div class="shell">
       <main class={`shell-main${route === "pads" || route === "kit" ? " no-scroll" : ""}`}>
