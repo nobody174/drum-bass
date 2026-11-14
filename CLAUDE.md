@@ -27,6 +27,10 @@ Drum learning PWA for an Alesis Nitro Max e-drum kit (Android, Chrome, Web MIDI)
 
 After each milestone: short TL;DR in chat, details in `docs/`, and ask the user to test on the phone before continuing.
 
+## Real kit reference
+
+`docs/reference/nitro-max-kit.md` and `nitro-max-kit.json` describe the real kit from photos: 1 crash, 1 ride, 3 toms, hi-hat with foot controller, exact placement, and MIDI notes from the manual. **Next task:** update the default preset and starter MIDI map to match (see the "Changes needed in the app" list in that file).
+
 ## Current status
 
 M0 and M1 done and phone-tested. M2 written (Clone Hero import, falling-lane player, scoring, library, synthetic demo song); awaiting phone test. Unverified: song.ini delay sign, RB note numbers and disco-flip events (need a real chart). See docs/m2-*.md.

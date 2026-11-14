@@ -1,0 +1,58 @@
+{
+  "name": "Alesis Nitro Max (nephew's kit)",
+  "source": "Photos of the kit (2026-11-13, not stored in the repo) + Alesis Nitro Max user guide section 5.2",
+  "coordinateSystem": {
+    "note": "Same as src/kit/types.ts. Right-handed kit as seen from the drummer's seat. x: 0 = drummer's left .. 1 = right. y: 0 = far/back .. 1 = near the drummer. size = piece diameter relative to stage HEIGHT. Stage aspect is 16:9.",
+    "derivedFrom": "the top-down photo (640x482 px). x = (px + 108.5) / 857, y = py / 482. Perspective makes cymbals look larger than real; sizes below use real proportions (10in = 0.24, 8in = 0.192)."
+  },
+  "confidence": "Positions are approximate (about +/- 0.03). Kick and hi-hat pedal are estimated from the front photo because the top-down photo cuts off the foot area. The user can fine-tune everything in the kit editor.",
+  "pieces": [
+    { "id": "hihat",  "kind": "cymbal", "x": 0.22, "y": 0.48, "size": 0.24, "physical": "10in single-zone pad on stand + foot controller", "notes": { "closed": 42, "open": 46, "pedal": 44, "halfOpen": 23, "splash": 21 } },
+    { "id": "crash1", "kind": "cymbal", "x": 0.44, "y": 0.14, "size": 0.24, "physical": "10in single-zone pad with choke, back centre-left above tom 1", "notes": { "bow": 49 } },
+    { "id": "tom1",   "kind": "drum",   "x": 0.48, "y": 0.35, "size": 0.19, "physical": "8in single-zone mesh, back row left", "notes": { "head": 48 } },
+    { "id": "tom2",   "kind": "drum",   "x": 0.62, "y": 0.36, "size": 0.19, "physical": "8in single-zone mesh, back row right", "notes": { "head": 45 } },
+    { "id": "snare",  "kind": "drum",   "x": 0.44, "y": 0.60, "size": 0.24, "physical": "10in dual-zone mesh, front left of centre", "notes": { "head": 38, "rim": 40 } },
+    { "id": "tom3",   "kind": "drum",   "x": 0.67, "y": 0.61, "size": 0.19, "physical": "8in single-zone mesh, front right (floor tom position)", "notes": { "head": 43 } },
+    { "id": "ride",   "kind": "cymbal", "x": 0.80, "y": 0.50, "size": 0.24, "physical": "10in single-zone pad, far right", "notes": { "bow": 51 } },
+    { "id": "kick",   "kind": "pedal",  "x": 0.58, "y": 0.83, "size": 0.20, "physical": "kick tower + beater pedal, right foot, centre-right in front", "notes": { "head": 36 } }
+  ],
+  "nonPlayable": [
+    { "id": "module", "x": 0.31, "y": 0.37, "note": "Nitro Max module on the rack, between hi-hat and tom 1" },
+    { "id": "hihatPedal", "x": 0.40, "y": 0.91, "note": "Hi-hat foot controller, left foot, in front of the snare's left side. Its MIDI note 44 is a zone of the hihat piece, not a separate piece." }
+  ],
+  "notPresent": ["crash2", "crash3", "tom4", "splash", "china", "ride bell zone", "tom rim zones"],
+  "defaultMidiNotes": {
+    "source": "Alesis Nitro Max user guide, section 5.2 (parsed from PDF text, verify with MIDI learn)",
+    "kick": 36,
+    "snareHead": 38,
+    "snareRim": 40,
+    "tom1": 48,
+    "tom2": 45,
+    "tom3": 43,
+    "tom4": 41,
+    "hihatClosed": 42,
+    "hihatHalfOpen": 23,
+    "hihatOpen": 46,
+    "hihatPedal": 44,
+    "hihatSplash": 21,
+    "crash1": 49,
+    "crash2": 57,
+    "ride": 51
+  },
+  "differencesFromCurrentAppDefaults": {
+    "snareRim": "app uses 37, kit uses 40",
+    "tom2": "app uses 47, kit uses 45",
+    "tom3": "app uses 45, kit uses 43",
+    "crash2": "app default kit has crash2; the real kit has only one crash",
+    "rideBell": "app has ride bell note 53; the ride pad is single-zone, so no bell",
+    "positions": "app defaults were guesses; use the positions above",
+    "hihatExtras": "add halfOpen 23 and splash 21 to the hihat zones"
+  },
+  "hardware": {
+    "usb": "USB-B (square) port on the rear of the module, unconnected in the photo; power adapter 9 V DC plugged in",
+    "expansionInputs": ["CYM 2", "TOM 4"],
+    "audioOut": "L/MONO output has a cable plugged in; AUX IN present",
+    "bluetooth": "Logo on the front. Per the user guide it is an audio profile (A2DP), not Bluetooth MIDI. Use USB for MIDI.",
+    "channel": 10
+  }
+}

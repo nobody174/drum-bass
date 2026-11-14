@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="800" height="450"><rect width="1600" height="900" fill="#14110f"/>
+<text x="20" y="34" fill="#aaa" font-family="sans-serif" font-size="22">Nitro Max layout (drummer at the bottom, right-handed) - generated from nitro-max-kit.json</text>
+<circle cx="352" cy="432" r="108" fill="#f7d117" fill-opacity="0.25" stroke="#f7d117" stroke-width="5"/>
+<text x="352" y="440" fill="#fff" font-family="sans-serif" font-size="26" text-anchor="middle">hihat</text>
+<circle cx="704" cy="126" r="108" fill="#27d3ff" fill-opacity="0.25" stroke="#27d3ff" stroke-width="5"/>
+<text x="704" y="134" fill="#fff" font-family="sans-serif" font-size="26" text-anchor="middle">crash1</text>
+<circle cx="768" cy="315" r="86" fill="#2f7bff" fill-opacity="0.25" stroke="#2f7bff" stroke-width="5"/>
+<text x="768" y="323" fill="#fff" font-family="sans-serif" font-size="26" text-anchor="middle">tom1</text>
+<circle cx="992" cy="324" r="86" fill="#17c3b2" fill-opacity="0.25" stroke="#17c3b2" stroke-width="5"/>
+<text x="992" y="332" fill="#fff" font-family="sans-serif" font-size="26" text-anchor="middle">tom2</text>
+<circle cx="704" cy="540" r="108" fill="#e5322d" fill-opacity="0.25" stroke="#e5322d" stroke-width="5"/>
+<text x="704" y="548" fill="#fff" font-family="sans-serif" font-size="26" text-anchor="middle">snare</text>
+<circle cx="1072" cy="549" r="86" fill="#9b5de5" fill-opacity="0.25" stroke="#9b5de5" stroke-width="5"/>
+<text x="1072" y="557" fill="#fff" font-family="sans-serif" font-size="26" text-anchor="middle">tom3</text>
+<circle cx="1280" cy="450" r="108" fill="#f4f4f4" fill-opacity="0.25" stroke="#f4f4f4" stroke-width="5"/>
+<text x="1280" y="458" fill="#fff" font-family="sans-serif" font-size="26" text-anchor="middle">ride</text>
+<circle cx="928" cy="747" r="90" fill="#ff7a1a" fill-opacity="0.25" stroke="#ff7a1a" stroke-width="5"/>
+<text x="928" y="755" fill="#fff" font-family="sans-serif" font-size="26" text-anchor="middle">kick</text>
+<rect x="466" y="315" width="60" height="36" fill="none" stroke="#777" stroke-dasharray="6 4"/>
+<text x="496" y="339" fill="#999" font-family="sans-serif" font-size="16" text-anchor="middle">module</text>
+<rect x="610" y="801" width="60" height="36" fill="none" stroke="#777" stroke-dasharray="6 4"/>
+<text x="640" y="825" fill="#999" font-family="sans-serif" font-size="16" text-anchor="middle">hihatPedal</text>
+</svg>
