@@ -33,4 +33,4 @@ After each milestone: short TL;DR in chat, details in `docs/`, and ask the user 
 
 ## Current status
 
-M0 and M1 done and phone-tested. Real Nitro Max kit applied (with a safe saved-kit migration), "Learn all pads" wizard, and M3 kit view (approach rings, switchable with falling lanes) written; awaiting phone test along with M2 (Clone Hero import, falling-lane player, scoring, library, synthetic demo song). Chart note numbers, mix/disco events, .chart lanes and song.ini delay sign are now verified against official/community docs (no real file yet); still unverified: tom markers across difficulties, real-file behaviour, audio sync on the phone. See docs/m2-*.md.
+M0-M3 written and mostly phone-tested (M0, M1, M2 demo, M3 kit view OK on the test phone). M4 (Settings screen, latency calibration wizard, backup/restore) written; awaiting phone test. Still unverified: real kit notes (use the Learn wizard), real Clone Hero files, audio sync and latency on real hardware. Not built: nb/en language, split mode, tempo/loop/wait practice tools (M5). See docs/m*-*.md.

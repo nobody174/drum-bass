@@ -2,6 +2,7 @@ import type { Difficulty, StemRole } from "../../chart/types";
 import type { PieceId } from "../../kit/types";
 import type { MixMode } from "../../audio/transport";
 import { planMix } from "../../audio/stems";
+import { settingsStore } from "../../settings/store";
 import { DEFAULT_APPROACH_SEC, clampApproach } from "../../render/kitGeometry";
 
 export type DisplayMode = "lanes" | "kit";
@@ -82,11 +83,11 @@ export function parseParams(q: URLSearchParams, present: Difficulty[], roles: re
   const d = q.get("d") as Difficulty | null;
   const m = q.get("m") as MixMode | null;
   const raw = q.get("c");
-  const c = raw === null || raw.trim() === "" ? 4 : Number(raw); // Number(null) is 0: absent means the default
+  const c = raw === null || raw.trim() === "" ? settingsStore.get().defaultCountIn : Number(raw); // Number(null) is 0: absent means the default
   return {
     difficulty: d && present.includes(d) ? d : defaultDifficulty(present),
     mix: m && MIXES.some((x) => x.id === m) ? m : defaultMix(roles),
-    countIn: Number.isFinite(c) && c >= 0 && c <= 8 ? Math.round(c) : 4,
+    countIn: Number.isFinite(c) && c >= 0 && c <= 8 ? Math.round(c) : settingsStore.get().defaultCountIn,
     display: parseDisplayMode(q.get("v")) ?? loadDisplayMode(),
     approach: q.get("a") !== null && q.get("a")!.trim() !== "" ? clampApproach(Number(q.get("a"))) : loadApproach(),
   };

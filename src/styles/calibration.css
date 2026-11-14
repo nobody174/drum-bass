@@ -1,0 +1,24 @@
+.cal { display: grid; gap: 12px; }
+.cal p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.4; }
+.cal p.cal-warn { color: var(--amber); }
+.cal-tap {
+  min-height: 112px; border-radius: 14px; border: 2px solid var(--accent);
+  background: var(--panel-2); color: var(--text); font-family: var(--font-head);
+  font-size: 2rem; letter-spacing: .08em; touch-action: manipulation; user-select: none;
+}
+.cal-tap:active { background: #5c0b0f; }
+.cal-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.cal-actions button { min-height: var(--touch); min-width: var(--touch); }
+.cal-progress { font-family: var(--font-sub); letter-spacing: .06em; text-transform: uppercase; }
+.cal-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
+.cal-stat { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.cal-stat b { display: block; font-size: 1.3rem; }
+.cal-stat span { color: var(--muted); font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; }
+.cal-verdict { font-family: var(--font-sub); letter-spacing: .06em; text-transform: uppercase; }
+.cal-verdict.good { color: #4ade80; }
+.cal-verdict.noisy, .cal-verdict.too-few { color: var(--amber); }
+.cal-tune { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cal-tune .cal-name { flex: 1 1 100%; font-family: var(--font-sub); letter-spacing: .06em; text-transform: uppercase; }
+.cal-tune output { min-width: 80px; text-align: center; font-size: 1.1rem; }
+.cal-tune button { min-height: var(--touch); min-width: var(--touch); }
+.cal p.cal-hint { color: var(--muted); font-size: .85rem; }

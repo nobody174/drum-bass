@@ -268,6 +268,19 @@ describe("clickonly mix: metronome from the chart tempo map", () => {
     t.pause();
   });
 
+  it("setMetronome ticks in a non-clickonly mix on the same track, and stops when turned off", async () => {
+    const { f, t } = await setupClick("full");
+    t.setMetronome(true);
+    await t.play();
+    run(f, 1);
+    expect(f.oscStarts.slice(0, 3)).toEqual([0.05, 0.55, 1.05]);
+    t.setMetronome(false);
+    const n = f.oscStarts.length;
+    run(f, 3);
+    expect(f.oscStarts).toHaveLength(n);
+    t.pause();
+  });
+
   it("stops ticking on pause and resumes from the paused position", async () => {
     const { f, t } = await setupClick("clickonly");
     await t.play();

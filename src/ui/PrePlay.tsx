@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { remapToKit } from "../chart/remap";
 import type { Difficulty } from "../chart/types";
 import { kitStore, type KitPreset } from "../kit";
+import { settingsStore } from "../settings/store";
 import { songStore, type StoredSong } from "../storage/songs";
 import {
   COUNT_INS, DIFFICULTIES, MIXES, defaultDifficulty, defaultMix, mixAvailability, playHref, remapLine, loadApproach, loadDisplayMode, saveApproach, saveDisplayMode, type PlayParams,
@@ -34,7 +35,7 @@ export default function PrePlay({ songId }: { songId: string }) {
         setSong(s);
         setPreset(p);
         setOffset(s.offsetMs);
-        setParams({ difficulty: defaultDifficulty(present), mix: defaultMix(roles), countIn: 4, display: loadDisplayMode(), approach: loadApproach() });
+        setParams({ difficulty: defaultDifficulty(present), mix: defaultMix(roles), countIn: settingsStore.get().defaultCountIn, display: loadDisplayMode(), approach: loadApproach() });
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : String(e));
       }

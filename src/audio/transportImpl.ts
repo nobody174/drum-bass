@@ -31,6 +31,11 @@ export interface TransportImpl extends Transport {
    * song (accent on beat 1, tempo changes honoured). Without it clickonly is silent after the count-in.
    */
   setClickTrack(track: { points: readonly TempoPoint[]; beatsPerBar?: number } | null): void;
+  /**
+   * Metronome during play for the non-clickonly mixes (M4 setting). Uses the same click track as "clickonly",
+   * so the two can never double up. Takes effect immediately when playing.
+   */
+  setMetronome(on: boolean): void;
 }
 
 /** Lead between "now" and the first scheduled sample, so the start is sample-accurate. */
@@ -92,6 +97,7 @@ export function createTransport(injected?: AudioContext): TransportImpl {
   let stems: Stem[] = [];
   let delaySec = 0;
   let mix: MixMode = "full";
+  let metronome = false;
   let latency = 0;
   let sources: AudioBufferSourceNode[] = [];
   let gen = 0; // bumped whenever sources are stopped; stale onended callbacks are ignored
@@ -160,7 +166,7 @@ export function createTransport(injected?: AudioContext): TransportImpl {
   /** Metronome for the whole song from chart time `from` (anchored by anchorCtx/anchorSong). Only in clickonly. */
   function startClickTrack(from: number): void {
     stopClickTrack();
-    if (mix !== "clickonly" || !grid || !trackClicks) return;
+    if ((mix !== "clickonly" && !metronome) || !grid || !trackClicks) return;
     const g = grid;
     const group = trackClicks;
     const end = durationSec();
@@ -328,7 +334,16 @@ export function createTransport(injected?: AudioContext): TransportImpl {
       applyGains(false); // gains only: sources and position are untouched
       // The click track follows the mix without touching the audio sources.
       if (state === "playing") {
-        if (mix === "clickonly") startClickTrack(getCtx().currentTime - anchorCtx + anchorSong);
+        if (mix === "clickonly" || metronome) startClickTrack(getCtx().currentTime - anchorCtx + anchorSong);
+        else stopClickTrack();
+      }
+    },
+
+    setMetronome(on: boolean) {
+      if (metronome === on) return;
+      metronome = on;
+      if (state === "playing") {
+        if (mix === "clickonly" || metronome) startClickTrack(getCtx().currentTime - anchorCtx + anchorSong);
         else stopClickTrack();
       }
     },

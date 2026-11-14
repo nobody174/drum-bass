@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { remapToKit } from "../chart/remap";
 import { createTransport, type TransportImpl } from "../audio/transportImpl";
 import { Judge, type JudgeSummary } from "../game/judge";
+import { settingsStore, TIMING_WINDOWS } from "../settings/store";
+import { applyPalette } from "../settings/palette";
 import { buildTimeline, songTempo, type Timeline } from "../game/timeline";
 import { kitStore, matchNote, type KitPiece, type KitPreset } from "../kit";
 import { inputBus, startVirtualKeyboard, stopVirtualKeyboard } from "../midi";
@@ -66,6 +68,7 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
   const sess = useRef<Session | null>(null);
   const presetRef = useRef<KitPreset | null>(null);
   const lockRef = useRef<WakeLockSentinel | null>(null);
+  const keepAwakeRef = useRef(true);
   const queryStr = query.toString();
 
   const go = (p: Phase) => {
@@ -95,8 +98,11 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
 
     (async () => {
       try {
-        const [song, preset] = await Promise.all([songStore.getSong(songId), kitStore.ensureDefault()]);
+        const [song, storedPreset] = await Promise.all([songStore.getSong(songId), kitStore.ensureDefault()]);
         if (!alive) return;
+        // Settings are read once per run: changes made in Settings apply to the next run.
+        const cfg = settingsStore.get();
+        const preset = applyPalette(storedPreset, cfg.colorblindPalette);
         if (!song) throw new Error("This song is not in your library any more.");
         presetRef.current = preset;
         const present = (["easy", "medium", "hard", "expert"] as const).filter((d) => (song.notesByDifficulty[d]?.length ?? 0) > 0);
@@ -108,6 +114,8 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
 
         const laneIndex = new Map(timeline.lanes.map((l, i) => [l.id, i]));
         const judge = new Judge(timeline.notes, {
+          windows: TIMING_WINDOWS[cfg.timingPreset],
+          latencyMs: cfg.inputLatencyMs,
           onEvent: (e) => {
             const li = laneIndex.get(e.piece);
             if (li !== undefined) rendererRef.current?.judgement(li, e.kind);
@@ -115,6 +123,8 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
           },
         });
         transport = createTransport();
+        transport.outputLatencySec = cfg.outputLatencyMs / 1000;
+        transport.setMetronome(cfg.metronomeDuringPlay);
         await transport.load(song.audio.length ? song.audio : [silentStem(timeline.lastTime + END_TAIL_SEC + 2)], { delayMs: song.meta.delayMs + song.offsetMs });
         if (!alive) return;
         const tempo = songTempo(song.meta, timeline.notes);
@@ -219,7 +229,7 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
     let alive = true;
     const acquire = async () => {
       try {
-        if (phaseRef.current === "playing" && !lockRef.current && !acquiring && document.visibilityState === "visible") {
+        if (keepAwakeRef.current && phaseRef.current === "playing" && !lockRef.current && !acquiring && document.visibilityState === "visible") {
           acquiring = true;
           const lock = (await navigator.wakeLock?.request("screen")) ?? null;
           acquiring = false;
@@ -235,8 +245,10 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
         release();
       } else void acquire();
     };
-    if (phase === "playing") void acquire();
-    else release();
+    if (phase === "playing") {
+      keepAwakeRef.current = settingsStore.get().keepAwake;
+      void acquire();
+    } else release();
     document.addEventListener("visibilitychange", onVis);
     return () => {
       alive = false;
