@@ -153,3 +153,13 @@
 
 @media (prefers-reduced-motion: reduce) { .kw-state.listening { animation: none; } .kw-bar i { transition: none; } }
 @media (orientation: landscape) and (max-height: 420px) { .kw-target { font-size: 1.9rem; } }
+
+.kw-help { margin: 0; font-size: 1rem; color: var(--text); }
+.kw-sim {
+  min-height: 56px; width: 100%; padding: 8px 14px; border-radius: 10px; cursor: pointer; touch-action: manipulation;
+  font: 700 1.1rem var(--font-sub); letter-spacing: .06em; text-transform: uppercase; color: #000;
+  background: var(--amber); border: 2px solid var(--amber); border-bottom-width: 5px;
+}
+.kw-sim:active { filter: brightness(1.2); }
+.ke-vp-pad.target { border-color: var(--amber); background: color-mix(in srgb, var(--amber) 30%, var(--panel-2)); box-shadow: 0 0 0 3px var(--amber); animation: ke-pulse 1.2s infinite; }
+@media (prefers-reduced-motion: reduce) { .ke-vp-pad.target { animation: none; } }

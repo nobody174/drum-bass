@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createDefaultPreset, setMirrored } from "../kit";
 import {
   MAX_APPROACH_SEC, MIN_APPROACH_SEC, clampApproach, createRingSelection, fitStage, litAmount, pieceGeo, rankAlpha,
-  ringAlpha, ringFraction, ringRadius, ringTravel, selectRings, upperBound, windowEnd, windowStart,
+  ringAlpha, ringFraction, ringGlow, ringStroke, readyPulse, stepApproach, DEFAULT_APPROACH_SEC, ringRadius, ringTravel, selectRings, upperBound, windowEnd, windowStart,
 } from "./kitGeometry";
 
 describe("ring radius", () => {
@@ -41,7 +41,7 @@ describe("ring radius", () => {
     expect(clampApproach(0.1)).toBe(MIN_APPROACH_SEC);
     expect(clampApproach(9)).toBe(MAX_APPROACH_SEC);
     expect(clampApproach(1.2)).toBe(1.2);
-    expect(clampApproach(NaN)).toBe(1.5);
+    expect(clampApproach(NaN)).toBe(2.2);
   });
 });
 
@@ -145,5 +145,34 @@ describe("stage fit and piece geometry", () => {
     expect(litAmount(9.9, 10)).toBeGreaterThan(0);
     expect(litAmount(10.05, 10)).toBe(1);
     expect(litAmount(10.5, 10)).toBe(0);
+  });
+});
+
+describe("readability helpers", () => {
+  it("default approach is 2.2 s, max 3.0 s", () => {
+    expect(DEFAULT_APPROACH_SEC).toBe(2.2);
+    expect(MAX_APPROACH_SEC).toBe(3);
+  });
+  it("next ring is stronger, thicker and glows; later rings are fainter", () => {
+    expect(rankAlpha(1)).toBeLessThan(0.5);
+    expect(rankAlpha(2)).toBeLessThan(rankAlpha(1));
+    expect(ringStroke(0.5, 0)).toBeGreaterThan(ringStroke(0.5, 1) * 1.5);
+    expect(ringGlow(0.5, 0)).toBeGreaterThan(0);
+    expect(ringGlow(0.5, 1)).toBe(0);
+  });
+  it("ready pulse only in the last 0.4 s, stays within 0..1", () => {
+    expect(readyPulse(0, 1)).toBe(0);
+    expect(readyPulse(0.5, 1)).toBe(0);
+    expect(readyPulse(1.2, 1)).toBe(0);
+    let max = 0;
+    for (let t = 0.6; t <= 1; t += 0.01) { const p = readyPulse(t, 1); expect(p).toBeGreaterThanOrEqual(0); expect(p).toBeLessThanOrEqual(1); max = Math.max(max, p); }
+    expect(max).toBeGreaterThan(0.3);
+  });
+  it("stepApproach moves 0.2 s and clamps to 0.8..3.0", () => {
+    expect(stepApproach(2.2, 1)).toBe(2.4);
+    expect(stepApproach(2.2, -1)).toBe(2);
+    expect(stepApproach(3, 1)).toBe(3);
+    expect(stepApproach(0.8, -1)).toBe(0.8);
+    expect(stepApproach(1.5, 1)).toBe(1.7);
   });
 });

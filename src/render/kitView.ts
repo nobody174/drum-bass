@@ -3,7 +3,7 @@ import { countInBeatNumber } from "../game/timeline";
 import type { FlashKind, LaneNotes } from "./lanes";
 import {
   DEFAULT_APPROACH_SEC, DEFAULT_RINGS_PER_PIECE, RING_GRACE_SEC, clampApproach, createRingSelection, fitStage, litAmount,
-  pieceGeo, rankAlpha, ringAlpha, ringFraction, ringRadius, ringTravel, selectRings, windowEnd, windowStart, type PieceGeo,
+  pieceGeo, rankAlpha, readyPulse, ringAlpha, ringGlow, ringStroke, ringFraction, ringRadius, ringTravel, selectRings, windowEnd, windowStart, type PieceGeo,
 } from "./kitGeometry";
 
 /**
@@ -19,7 +19,7 @@ export interface KitViewOptions {
   lanes: readonly KitPiece[];
   notes: LaneNotes;
   durationSec?: number;
-  /** Seconds a ring is visible before its note (0.8..2.5, default 1.5). */
+  /** Seconds a ring is visible before its note (0.8..3.0, default 2.2). */
   approachSec?: number;
   /** Nearest pending rings drawn per piece in dense passages. */
   maxRingsPerPiece?: number;
@@ -34,6 +34,8 @@ export interface PlayRenderer {
   judgement(lane: number, kind: FlashKind, deltaMs?: number): void;
   setCombo(combo: number): void;
   setPaused(paused: boolean): void;
+  /** Kit view only: change the ring approach time live. */
+  setApproach?(sec: number): void;
   destroy(): void;
 }
 
@@ -160,7 +162,7 @@ export function createKitViewRenderer(canvas: HTMLCanvasElement, opts: KitViewOp
   const { lanes, pieces } = opts;
   const nLanes = lanes.length;
   const { times, laneOf, state } = opts.notes;
-  const approach = clampApproach(opts.approachSec ?? DEFAULT_APPROACH_SEC);
+  let approach = clampApproach(opts.approachSec ?? DEFAULT_APPROACH_SEC);
   const maxPer = Math.max(1, opts.maxRingsPerPiece ?? DEFAULT_RINGS_PER_PIECE);
   const reduced = opts.reducedMotion ?? false;
   const duration = opts.durationSec ?? (times.length ? times[times.length - 1]! + 2 : 1);
@@ -272,9 +274,25 @@ export function createKitViewRenderer(canvas: HTMLCanvasElement, opts: KitViewOp
       }
       ctx.globalAlpha = ringAlpha(frac) * rankAlpha(rank);
       ctx.strokeStyle = laneColor[li]!;
-      ctx.lineWidth = 2.5 + 3.5 * (1 - frac) * (rank === 0 ? 1 : 0.6);
+      ctx.lineWidth = ringStroke(frac, rank);
+      const glow = reduced ? 0 : ringGlow(frac, rank);
+      if (glow > 0) {
+        ctx.shadowColor = laneColor[li]!;
+        ctx.shadowBlur = glow;
+      }
       shapePath(ctx, lanePedal[li]!, g.cx, g.cy, g.rx * k, g.ry * k);
       ctx.stroke();
+      if (glow > 0) ctx.shadowBlur = 0;
+      if (rank === 0) {
+        const rp = readyPulse(t, nt);
+        if (rp > 0.01) {
+          // "Get ready": the piece rim pulses softly just before its note.
+          ctx.globalAlpha = rp * 0.7;
+          ctx.lineWidth = 3 + 3 * rp;
+          shapePath(ctx, lanePedal[li]!, g.cx, g.cy, g.rx, g.ry);
+          ctx.stroke();
+        }
+      }
       if (frac < 0.06 && rank === 0) {
         // Crossing the edge: crisp white line so the hit moment is obvious.
         ctx.globalAlpha = 0.9;
@@ -407,6 +425,9 @@ export function createKitViewRenderer(canvas: HTMLCanvasElement, opts: KitViewOp
     },
     setPaused(p) {
       paused = p;
+    },
+    setApproach(sec) {
+      approach = clampApproach(sec);
     },
     destroy() {
       destroyed = true;

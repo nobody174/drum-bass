@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createDefaultPreset, findConflicts, resetToNitroMaxDefault, setLocked, setMirrored } from "../../kit";
 import type { KitPiece, KitPreset, PieceId } from "../../kit";
 import {
-  advance, advanceAndReplay, back, conflictLines, statusText, buildPlan, buildReport, captureNote, createSession, currentStep, isListening, progress, redo,
+  stepHelp, advance, advanceAndReplay, back, conflictLines, statusText, buildPlan, buildReport, captureNote, createSession, currentStep, isListening, progress, redo,
   resolveDuplicate, skip, summaryRows,
 } from "./learnPlan";
 import { stepLabel, zonesFor } from "./zones";
@@ -327,5 +327,13 @@ describe("reset to default keeps mirrored", () => {
     const kick = (p: KitPreset) => p.pieces.find((x) => x.id === "kick")!.x;
     expect(kick(reset)).toBeCloseTo(1 - kick(createDefaultPreset()), 6);
     expect(reset.pieces.find((x) => x.id === "kick")!.midiNotes).toEqual(createDefaultPreset().pieces.find((x) => x.id === "kick")!.midiNotes);
+  });
+});
+
+describe("stepHelp", () => {
+  it("explains every standard zone in plain language", () => {
+    for (const st of buildPlan(createDefaultPreset())) expect(stepHelp(st.piece, st.zone).length, st.key).toBeGreaterThan(10);
+    expect(stepHelp("snare", "rim")).toContain("edge/rim");
+    expect(stepHelp("hihat", "pedal")).toContain("foot pedal");
   });
 });

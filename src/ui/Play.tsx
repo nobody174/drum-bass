@@ -11,8 +11,8 @@ import { bestFor, songStore } from "../storage/songs";
 import Results from "./Results";
 import { silentStem } from "./play/silentWav";
 import { PadRow } from "./play/PadRow";
-import { parseDisplayMode, loadApproach, loadDisplayMode, parseParams, saveDisplayMode, type DisplayMode, type PlayParams } from "./play/params";
-import { clampApproach } from "../render/kitGeometry";
+import { parseDisplayMode, loadApproach, loadDisplayMode, parseParams, saveApproach, saveDisplayMode, type DisplayMode, type PlayParams } from "./play/params";
+import { clampApproach, stepApproach, MIN_APPROACH_SEC, MAX_APPROACH_SEC } from "../render/kitGeometry";
 import "../styles/play.css";
 
 type Phase = "loading" | "ready" | "playing" | "paused" | "results" | "error";
@@ -59,6 +59,7 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
   const [sessVer, setSessVer] = useState(0);
   const [display, setDisplay] = useState<DisplayMode>(() => parseDisplayMode(query.get("v")) ?? loadDisplayMode());
   const approachRef = useRef(query.get("a") ? clampApproach(Number(query.get("a"))) : loadApproach());
+  const [approach, setApproachState] = useState(approachRef.current);
   const rendererRef = useRef<PlayRenderer | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const phaseRef = useRef<Phase>("loading");
@@ -186,6 +187,14 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
     setDisplay(next);
   };
 
+  const nudgeApproach = (dir: 1 | -1) => {
+    const v = stepApproach(approachRef.current, dir);
+    approachRef.current = v;
+    setApproachState(v);
+    saveApproach(v);
+    rendererRef.current?.setApproach?.(v);
+  };
+
   // Live input: pads, keyboard and MIDI all arrive through the bus.
   useEffect(() => {
     return inputBus.subscribe((e) => {
@@ -286,6 +295,13 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
         <button class="pl-mode" aria-label={display === "kit" ? "Switch to lanes view" : "Switch to kit view"} onClick={switchDisplay}>
           {display === "kit" ? "Lanes" : "Kit view"}
         </button>
+      )}
+      {display === "kit" && (phase === "ready" || phase === "playing" || phase === "paused") && (
+        <div class="pl-appr" role="group" aria-label="Ring approach time">
+          <button aria-label="Shorter approach time" disabled={approach <= MIN_APPROACH_SEC + 0.01} onClick={() => nudgeApproach(-1)}>-</button>
+          <span>Approach {approach.toFixed(1)} s</span>
+          <button aria-label="Longer approach time" disabled={approach >= MAX_APPROACH_SEC - 0.01} onClick={() => nudgeApproach(1)}>+</button>
+        </div>
       )}
       {phase === "playing" && (
         <button class="pl-pause" aria-label="Pause" onClick={pause}>

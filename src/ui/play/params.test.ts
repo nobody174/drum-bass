@@ -24,12 +24,12 @@ describe("display params", () => {
   it("reads v and a and clamps the approach time", () => {
     expect(parse("v=kit&a=2").display).toBe("kit");
     expect(parse("v=kit&a=2").approach).toBe(2);
-    expect(parse("v=lanes&a=99").approach).toBe(2.5);
+    expect(parse("v=lanes&a=99").approach).toBe(3);
     expect(parse("v=lanes&a=0.1").approach).toBe(0.8);
   });
-  it("falls back to lanes and 1.5 s when absent or invalid", () => {
+  it("falls back to lanes and 2.2 s when absent or invalid", () => {
     expect(parse("v=bogus").display).toBe("lanes");
-    expect(parse("").approach).toBe(1.5);
+    expect(parse("").approach).toBe(2.2);
   });
   it("playHref carries the mode so a run restarts in the same mode", () => {
     const href = playHref("abc", { difficulty: "easy", mix: "full", countIn: 4, display: "kit", approach: 1.8 });

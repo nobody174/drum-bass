@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import type { KitPreset, PieceId } from "../../kit";
 import { inputBus, useWebMidi } from "../../midi";
-import { VirtualPads } from "./VirtualPads";
+import { VirtualPads, sendNote } from "./VirtualPads";
 import { findConflicts } from "../../kit";
 import {
   CONFIRM_MS, advanceAndReplay, back, buildReport, captureNote, conflictLines, createSession, currentStep, goTo,
-  isListening, progress, redo, resolveDuplicate, skip, statusText, summaryRows,
+  isListening, progress, redo, resolveDuplicate, skip, statusText, stepHelp, summaryRows,
 } from "./learnPlan";
 import type { CaptureResult, Cc4Info, LearnSession, NoteEffect } from "./learnPlan";
 
@@ -171,6 +171,13 @@ export function LearnWizard({ preset, onApply, onTarget, onExit }: LearnWizardPr
         {step?.expected !== undefined ? <>Manual default: note <b>{step.expected}</b></> : "No manual default for this one."}
       </p>
 
+      {step && stepHelp(step.piece, step.zone) && <p class="kw-help">{stepHelp(step.piece, step.zone)}</p>}
+      {step?.expected !== undefined && (
+        <button class="kw-sim" onClick={() => sendNote(step.expected!)}>
+          Tap here to simulate: {step.label}
+        </button>
+      )}
+
       <div class={`kw-state${listening ? " listening" : ""}${session.phase === "confirm" ? " ok" : ""}`} role="status" aria-live="polite">
         {session.phase === "confirm" && step && <>Saved note <b>{step.learned}</b> to {step.label}{step.expected !== undefined && step.learned !== step.expected ? " (differs from manual)" : ""}</>}
         {session.phase === "duplicate" && <>Note {session.duplicate?.note} is already used</>}
@@ -208,7 +215,7 @@ export function LearnWizard({ preset, onApply, onTarget, onExit }: LearnWizardPr
 
       <details open class="kw-pads">
         <summary>Virtual pads</summary>
-        <VirtualPads />
+        <VirtualPads highlightNote={step?.expected} />
       </details>
     </div>
   );

@@ -27,9 +27,13 @@ export const parseDisplayMode = (v: string | null | undefined): DisplayMode | nu
 /** Persisted default display mode (lanes unless the user chose otherwise). */
 export const loadDisplayMode = (): DisplayMode => parseDisplayMode(readStore(DISPLAY_KEY)) ?? "lanes";
 export const saveDisplayMode = (m: DisplayMode): void => writeStore(DISPLAY_KEY, m);
+const OLD_DEFAULT_APPROACH_SEC = 1.5;
 export const loadApproach = (): number => {
   const raw = readStore(APPROACH_KEY);
-  return raw === null || raw.trim() === "" ? DEFAULT_APPROACH_SEC : clampApproach(Number(raw));
+  if (raw === null || raw.trim() === "") return DEFAULT_APPROACH_SEC;
+  const v = Number(raw);
+  // 1.5 was the old default: anyone holding it never moved the slider, so they get the new default.
+  return v === OLD_DEFAULT_APPROACH_SEC ? DEFAULT_APPROACH_SEC : clampApproach(v);
 };
 export const saveApproach = (s: number): void => writeStore(APPROACH_KEY, String(clampApproach(s)));
 

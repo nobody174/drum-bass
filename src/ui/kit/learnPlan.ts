@@ -78,6 +78,25 @@ export function buildPlan(preset: KitPreset, reference: KitPreset = createDefaul
   return steps;
 }
 
+/** Plain-language hint for a step, for people who do not know drum terms. Empty for unknown zones. */
+export function stepHelp(piece: PieceId, zone: string): string {
+  const k = `${piece}:${zone}`;
+  const exact: Record<string, string> = {
+    "kick:head": "Kick = the bass drum, hit by the foot pedal (or its pad).",
+    "snare:head": "Snare head = the middle of the snare pad, the flat centre.",
+    "snare:rim": "Snare rim = the edge/rim of the snare pad.",
+    "hihat:closed": "Hi-hat closed = hitting the hi-hat while it is shut (foot pedal pressed down).",
+    "hihat:open": "Hi-hat open = hitting the hi-hat while the pedal is released so it rings.",
+    "hihat:pedal": "Hi-hat pedal = pressing the foot pedal, without hitting the hi-hat pad.",
+    "hihat:halfOpen": "Hi-hat half-open = the pedal pressed halfway, then hit. Optional, skip if unsure.",
+    "hihat:splash": "Hi-hat splash = pressing the pedal and lifting at once. Optional, skip if unsure.",
+  };
+  if (exact[k]) return exact[k]!;
+  if (zone === "bow" || zone === "head") return `${stepLabel(piece, zone)} = hit the pad's main surface.`;
+  if (zone === "bell") return `${stepLabel(piece, zone)} = the centre bump of the cymbal.`;
+  return "";
+}
+
 // ---------------------------------------------------------------- session
 
 export const DOUBLE_TRIGGER_MS = 150;

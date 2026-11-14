@@ -31,3 +31,11 @@ Files: `src/render/kitView.ts` (renderer), `src/render/kitGeometry.ts` (pure geo
 6. Rotate to portrait and back; frame rate in both modes (smooth at 60 fps?).
 7. Mirrored preset: pieces appear where the editor shows them.
 8. Decide: default mode, and whether SPEC 6.3 split mode is worth building.
+
+## Phone-test round 1 follow-ups
+
+- **Learn wizard**: the current step now shows plain-language help ("Snare rim = the edge/rim of the snare pad") and a large "Tap here to simulate: <piece + zone>" button that emits the step's manual-default note through `inputBus` as source `pad`, exactly like a real hit (hidden for steps without a default note). The matching pad in the virtual strip is highlighted (amber, pulsing). The whole wizard can be completed by touch alone.
+- **Kit view readability**: default approach 2.2 s (range 0.8-3.0 s). A stored 1.5 s (the old default) is treated as never moved and becomes 2.2 s; any other stored value is kept. The next ring per piece is thicker (4-8 px), full alpha with a glow; later rings are thin and faint (alpha 0.38, then x0.6). New "get ready" cue: the piece rim pulses softly in the last 0.4 s (`readyPulse`). Allocation-free in the frame loop; new helpers `ringStroke`, `ringGlow`, `readyPulse`, `stepApproach` in `kitGeometry.ts`.
+- **Approach control**: Play header (top centre, Kit view only) has -/+ buttons, 0.2 s steps, applied live through `setApproach` on the renderer and saved.
+- **PrePlay**: the approach slider is always shown; with Display = Lanes it is greyed out and labelled "(Kit view only)".
+- Tests: 298 pass with `npx vitest run --pool=vmThreads`; `npx tsc --noEmit` clean. Plain `npx vitest run` still flakes on this machine (pre-existing environment issue).

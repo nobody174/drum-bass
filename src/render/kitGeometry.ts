@@ -6,9 +6,9 @@ import { lowerBound } from "../game/timeline";
  * function of song time, note times and the saved kit preset, so it can be unit tested.
  */
 
-export const DEFAULT_APPROACH_SEC = 1.5;
+export const DEFAULT_APPROACH_SEC = 2.2;
 export const MIN_APPROACH_SEC = 0.8;
-export const MAX_APPROACH_SEC = 2.5;
+export const MAX_APPROACH_SEC = 3.0;
 /** Rings kept per piece in dense passages. */
 export const DEFAULT_RINGS_PER_PIECE = 3;
 /** Seconds after the note time during which a ring stays on screen (missed ones fade grey). */
@@ -47,7 +47,33 @@ export function ringAlpha(fraction: number): number {
 
 /** Nearest ring is full strength; each further ring on the same piece fades out. */
 export function rankAlpha(rank: number): number {
-  return Math.pow(0.55, rank);
+  return rank <= 0 ? 1 : 0.38 * Math.pow(0.6, rank - 1);
+}
+
+/** Stroke width (px): the next ring per piece is clearly thicker than the later, fainter ones. */
+export function ringStroke(fraction: number, rank: number): number {
+  return rank <= 0 ? 4 + 4 * (1 - fraction) : 1.6 + 1.2 * (1 - fraction);
+}
+
+/** Glow blur (px) of the next ring only; later rings have none. */
+export function ringGlow(fraction: number, rank: number): number {
+  return rank <= 0 ? 6 + 8 * (1 - fraction) : 0;
+}
+
+/** Seconds before a note during which the piece rim pulses ("get ready"). */
+export const READY_SEC = 0.4;
+
+/** Soft rim pulse 0..1: two gentle beats in the last READY_SEC before the note, fading in; 0 outside. */
+export function readyPulse(songTime: number, noteTime: number): number {
+  const dt = noteTime - songTime;
+  if (dt > READY_SEC || dt < -0.05) return 0;
+  const u = 1 - Math.max(0, dt) / READY_SEC; // 0 -> 1 towards the note
+  return (0.5 - 0.5 * Math.cos(u * Math.PI * 4)) * (0.35 + 0.65 * u);
+}
+
+/** Approach control step: +/- 0.2 s, rounded to 0.1 s, clamped to 0.8..3.0. */
+export function stepApproach(current: number, dir: 1 | -1): number {
+  return clampApproach(Math.round((clampApproach(current) + dir * 0.2) * 10) / 10);
 }
 
 /** First index with times[i] > t. */

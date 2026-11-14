@@ -39,6 +39,17 @@
   background: rgba(20,20,24,.75); border: 2px solid var(--line); border-radius: 24px; cursor: pointer; color: var(--text);
   font-family: var(--font-sub); text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; touch-action: manipulation;
 }
+.pl-appr {
+  position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; align-items: center; gap: 4px;
+  background: rgba(20,20,24,.75); border: 2px solid var(--line); border-radius: 24px; padding: 0 4px; height: var(--touch);
+  font-family: var(--font-sub); text-transform: uppercase; letter-spacing: .06em; font-size: .7rem; color: var(--text);
+}
+.pl-appr button {
+  width: 40px; height: 40px; border-radius: 50%; border: 0; background: var(--panel-2, #24242a); color: var(--text);
+  font: 700 1.3rem/1 var(--font-sub); cursor: pointer; touch-action: manipulation;
+}
+.pl-appr button:disabled { opacity: .35; }
+.pl-appr span { min-width: 8.5em; text-align: center; white-space: nowrap; }
 .pl-pause svg { width: 22px; height: 22px; fill: currentColor; }
 .pl-pads { display: flex; gap: 4px; padding: 4px; flex: none; touch-action: none; }
 .pl-pad {

@@ -26,7 +26,7 @@ export function sendNote(note: number): void {
 const clamp = (n: number) => Math.max(0, Math.min(127, Math.round(n)));
 
 /** Touch-friendly simulated hits through the shared input bus. No listeners, so nothing to clean up. */
-export function VirtualPads() {
+export function VirtualPads({ highlightNote }: { highlightNote?: number } = {}) {
   const [custom, setCustom] = useState(60);
   const [draft, setDraft] = useState("60");
   const set = (n: number) => { const v = clamp(Number.isFinite(n) ? n : 0); setCustom(v); setDraft(String(v)); };
@@ -35,7 +35,7 @@ export function VirtualPads() {
       <div class="ke-vp-grid" role="group" aria-label="Virtual pads">
         {PADS.map((p) => (
           <button
-            key={p.name} class="ke-vp-pad" aria-label={`${p.name}, note ${p.note}`}
+            key={p.name} class={`ke-vp-pad${highlightNote === p.note ? " target" : ""}`} aria-current={highlightNote === p.note ? "true" : undefined} aria-label={`${p.name}, note ${p.note}`}
             onPointerDown={(e) => { if (e.pointerType === "mouse" && e.button !== 0) return; sendNote(p.note); }}
             onKeyDown={(e) => { if ((e.key === "Enter" || e.key === " ") && !e.repeat) { e.preventDefault(); sendNote(p.note); } }}
           >

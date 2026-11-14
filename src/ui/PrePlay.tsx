@@ -128,16 +128,13 @@ export default function PrePlay({ songId }: { songId: string }) {
               onInput={(e) => saveOffset(Number((e.target as HTMLInputElement).value))} />
             <output>{offset > 0 ? "+" : ""}{offset} ms</output>
           </div>
-          {params.display === "kit" && (
-            <>
-              <label for="pp-approach">Kit view: ring approach time</label>
-              <div class="pp-range">
-                <input id="pp-approach" type="range" min={MIN_APPROACH_SEC} max={MAX_APPROACH_SEC} step={0.1} value={params.approach}
-                  onInput={(e) => set({ approach: Number((e.target as HTMLInputElement).value) })} />
-                <output>{params.approach.toFixed(1)} s</output>
-              </div>
-            </>
-          )}
+          <label for="pp-approach">Kit view: ring approach time{params.display !== "kit" && " (Kit view only)"}</label>
+          <div class="pp-range">
+            <input id="pp-approach" type="range" min={MIN_APPROACH_SEC} max={MAX_APPROACH_SEC} step={0.1} value={params.approach}
+              disabled={params.display !== "kit"} style={params.display !== "kit" ? { opacity: 0.45 } : undefined}
+              onInput={(e) => set({ approach: Number((e.target as HTMLInputElement).value) })} />
+            <output>{params.approach.toFixed(1)} s</output>
+          </div>
           <p class="pp-note">If the chart feels early or late against the music, nudge this. Saved per song.</p>
           {saveErr && <p class="pp-notice" role="alert">Could not save offset: {saveErr}</p>}
           {remap && remap.remapped.length > 0 && (
