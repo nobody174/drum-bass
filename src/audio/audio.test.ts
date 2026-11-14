@@ -19,6 +19,19 @@ describe("noteToVoice", () => {
     expect(noteToVoice(51).kind).toBe("ride");
     expect(noteToVoice(53).kind).toBe("bell");
   });
+  it("follows the Nitro Max notes and keeps every GM note working", () => {
+    expect(noteToVoice(40).kind).toBe("snare"); // snare rim / electric snare
+    expect(noteToVoice(23).kind).toBe("hatOpen"); // half-open hat
+    expect(noteToVoice(21).kind).toBe("crash"); // hat splash
+    for (const n of [48, 45, 43]) expect(noteToVoice(n).kind).toBe("tom"); // kit toms
+    for (const n of [41, 47, 50]) expect(noteToVoice(n).kind).toBe("tom"); // GM toms
+    expect(noteToVoice(35).kind).toBe("kick");
+    for (const n of [52, 55, 57]) expect(noteToVoice(n).kind).toBe("crash");
+    expect(noteToVoice(59).kind).toBe("ride");
+    // kit tom 1 > tom 2 > tom 3 in pitch
+    expect(noteToVoice(48).pitch).toBeGreaterThan(noteToVoice(45).pitch);
+    expect(noteToVoice(45).pitch).toBeGreaterThan(noteToVoice(43).pitch);
+  });
   it("gives toms descending pitch from high to low", () => {
     const notes = [50, 48, 47, 45, 43, 41];
     const pitches = notes.map((n) => noteToVoice(n).pitch);

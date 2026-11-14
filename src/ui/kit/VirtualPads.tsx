@@ -1,23 +1,23 @@
 import { useState } from "preact/hooks";
 import { inputBus, STARTER_NOTES as N } from "../../midi";
 
-/** Starter GM notes (UNVERIFIED against the real kit). Crash 2 is GM 57. */
-const PADS: { name: string; note: number }[] = [
+/** Nitro Max notes from the manual (UNVERIFIED on hardware). Other notes: use the custom stepper. */
+export const VIRTUAL_PADS: { name: string; note: number }[] = [
   { name: "Kick", note: N.kick },
   { name: "Snare", note: N.snare },
   { name: "Rim", note: N.snareRim },
   { name: "HH closed", note: N.hihatClosed },
   { name: "HH open", note: N.hihatOpen },
   { name: "HH pedal", note: N.hihatPedal },
+  { name: "HH half-open", note: N.hihatHalfOpen },
+  { name: "HH splash", note: N.hihatSplash },
   { name: "Tom 1", note: N.tom1 },
   { name: "Tom 2", note: N.tom2 },
   { name: "Tom 3", note: N.tom3 },
-  { name: "Tom 4", note: N.tom4 },
-  { name: "Crash 1", note: N.crash1 },
-  { name: "Crash 2", note: 57 },
+  { name: "Crash", note: N.crash1 },
   { name: "Ride", note: N.ride },
-  { name: "Bell", note: N.rideBell },
 ];
+const PADS = VIRTUAL_PADS;
 
 export function sendNote(note: number): void {
   inputBus.emit({ note, velocity: 100, channel: 9, source: "pad", timeStamp: performance.now() });

@@ -7,8 +7,8 @@ export type Lane = "kick" | "kick2x" | "red" | "yellow" | "blue" | "green" | "or
  * Lane -> canonical piece.
  * 4-lane pro drums (Rock Band layout): yellow/blue/green are toms when marked, otherwise cymbals:
  *   yellow tom tom1 / cymbal hihat, blue tom2 / ride, green tom3 / crash1.
- * 5-lane (UNVERIFIED layout; only used when a 5th pad lane exists): yellow hihat, blue tom1,
- *   orange crash1, green tom2. Tom/cymbal markers are ignored in 5-lane mode.
+ * 5-lane (lane types verified: yellow/orange cymbals, red/blue/green toms; the piece choice is ours): yellow hihat,
+ *   blue tom1, orange crash1, green tom2. Tom/cymbal markers are ignored in 5-lane mode.
  */
 export function lanePiece(lane: Lane, isTom: boolean, fiveLane: boolean): PieceId {
   switch (lane) {

@@ -2,7 +2,7 @@
  * Pure kit-model functions (SPEC sections 4 and 5). Nothing here mutates its input; every change
  * returns a new preset with a fresh `updatedAt`. No-ops return the input object unchanged.
  */
-import { STARTER_NOTES } from '../midi/starterMap';
+import { EXTRA_PIECE_NOTES, STARTER_NOTES } from '../midi/starterMap';
 import type { KitPiece, KitPreset, NoteMatch, PieceId, PieceKind } from './types';
 
 /** Stage aspect ratio (width / height). Piece `size` is relative to stage HEIGHT. */
@@ -37,36 +37,52 @@ interface PieceDefaults {
   notes: Record<string, number>;
 }
 
-/** Right-handed kit seen from the drummer's seat, x 0..1 left to right, y 0 top .. 1 bottom. */
+/**
+ * Piece defaults, x 0..1 left to right, y 0 far .. 1 near the drummer (right-handed kit seen from
+ * the drummer's seat). The first eight come from docs/reference/nitro-max-kit.json (the real kit).
+ * tom4, crash2, crash3, splash and china are NOT on the real kit; they exist only so a user can
+ * still add them in the editor (placed on a free spot by addPiece).
+ */
 const DEFAULTS: Record<PieceId, PieceDefaults> = {
-  kick: { kind: 'pedal', x: 0.5, y: 0.82, size: 0.3, color: '#ff7a1a', notes: { head: STARTER_NOTES.kick } },
+  kick: { kind: 'pedal', x: 0.58, y: 0.83, size: 0.2, color: '#ff7a1a', notes: { head: STARTER_NOTES.kick } },
   snare: {
-    kind: 'drum', x: 0.3, y: 0.62, size: 0.24, color: '#e5322d',
+    kind: 'drum', x: 0.44, y: 0.6, size: 0.24, color: '#e5322d',
     notes: { head: STARTER_NOTES.snare, rim: STARTER_NOTES.snareRim },
   },
+  // Single-zone cymbal pad plus foot controller; the pedal (44) is a zone, not a separate piece.
   hihat: {
-    kind: 'cymbal', x: 0.12, y: 0.55, size: 0.22, color: '#f7d117',
-    notes: { closed: STARTER_NOTES.hihatClosed, open: STARTER_NOTES.hihatOpen, pedal: STARTER_NOTES.hihatPedal },
+    kind: 'cymbal', x: 0.22, y: 0.48, size: 0.24, color: '#f7d117',
+    notes: {
+      closed: STARTER_NOTES.hihatClosed, open: STARTER_NOTES.hihatOpen, pedal: STARTER_NOTES.hihatPedal,
+      halfOpen: STARTER_NOTES.hihatHalfOpen, splash: STARTER_NOTES.hihatSplash,
+    },
   },
-  tom1: { kind: 'drum', x: 0.4, y: 0.3, size: 0.18, color: '#2f7bff', notes: { head: STARTER_NOTES.tom1 } },
-  tom2: { kind: 'drum', x: 0.54, y: 0.3, size: 0.18, color: '#17c3b2', notes: { head: STARTER_NOTES.tom2 } },
-  tom3: { kind: 'drum', x: 0.74, y: 0.62, size: 0.22, color: '#9b5de5', notes: { head: STARTER_NOTES.tom3 } },
-  tom4: { kind: 'drum', x: 0.88, y: 0.8, size: 0.2, color: '#e056a0', notes: { head: STARTER_NOTES.tom4 } },
-  crash1: { kind: 'cymbal', x: 0.16, y: 0.18, size: 0.24, color: '#27d3ff', notes: { bow: STARTER_NOTES.crash1 } },
-  // GM crash cymbal 2 = 57.
-  crash2: { kind: 'cymbal', x: 0.7, y: 0.15, size: 0.24, color: '#7fe9ff', notes: { bow: 57 } },
+  tom1: { kind: 'drum', x: 0.48, y: 0.35, size: 0.19, color: '#2f7bff', notes: { head: STARTER_NOTES.tom1 } },
+  tom2: { kind: 'drum', x: 0.62, y: 0.36, size: 0.19, color: '#17c3b2', notes: { head: STARTER_NOTES.tom2 } },
+  tom3: { kind: 'drum', x: 0.67, y: 0.61, size: 0.19, color: '#9b5de5', notes: { head: STARTER_NOTES.tom3 } },
+  tom4: { kind: 'drum', x: 0.88, y: 0.8, size: 0.2, color: '#e056a0', notes: { head: EXTRA_PIECE_NOTES.tom4 } },
+  crash1: { kind: 'cymbal', x: 0.44, y: 0.14, size: 0.24, color: '#27d3ff', notes: { bow: STARTER_NOTES.crash1 } },
+  // GM crash cymbal 2 = 57 (CYM 2 expansion input on the real module).
+  crash2: { kind: 'cymbal', x: 0.7, y: 0.15, size: 0.24, color: '#7fe9ff', notes: { bow: EXTRA_PIECE_NOTES.crash2 } },
   // GM splash = 55 (crash3 uses it as a placeholder; MIDI learn decides).
   crash3: { kind: 'cymbal', x: 0.05, y: 0.4, size: 0.2, color: '#a8d8ff', notes: { bow: 55 } },
-  ride: {
-    kind: 'cymbal', x: 0.88, y: 0.35, size: 0.28, color: '#f4f4f4',
-    notes: { bow: STARTER_NOTES.ride, bell: STARTER_NOTES.rideBell },
-  },
+  // Single-zone ride pad: bow only, no bell zone.
+  ride: { kind: 'cymbal', x: 0.8, y: 0.5, size: 0.24, color: '#f4f4f4', notes: { bow: STARTER_NOTES.ride } },
   splash: { kind: 'cymbal', x: 0.3, y: 0.1, size: 0.14, color: '#b7f0ff', notes: { bow: 55 } },
   china: { kind: 'cymbal', x: 0.9, y: 0.1, size: 0.18, color: '#ffb347', notes: { bow: 52 } },
 };
 
 export const NITRO_MAX_NOTE =
-  'UNVERIFIED: Nitro Max is assumed to have 3 toms, 2 crashes and 1 ride; notes are GM starter values. Verify with MIDI learn.';
+  'UNVERIFIED: the Nitro Max notes come from the user guide PDF text (section 5.2) and the layout from photos. Verify with MIDI learn.';
+
+/** Name of the built-in preset. */
+export const NITRO_MAX_NAME = 'Alesis Nitro Max';
+/** Bump when the default kit changes; stored in `preset.template.version`. */
+export const NITRO_MAX_TEMPLATE_VERSION = 2;
+/** The real kit's pieces, in canonical order. No crash2, no tom4. */
+export const NITRO_MAX_PIECES: readonly PieceId[] = [
+  'kick', 'snare', 'hihat', 'tom1', 'tom2', 'tom3', 'crash1', 'ride',
+];
 
 function newId(): string {
   const c = (globalThis as { crypto?: Crypto }).crypto;
@@ -127,14 +143,32 @@ export function uniqueName(base: string, existing: readonly string[]): string {
   for (let n = 2; ; n++) if (!used.has(`${base} ${n}`.toLowerCase())) return `${base} ${n}`;
 }
 
+/** The real Alesis Nitro Max (8 pieces, notes from the manual). Fresh id on every call. */
 export function createDefaultPreset(): KitPreset {
-  const ids: PieceId[] = ['kick', 'snare', 'hihat', 'tom1', 'tom2', 'tom3', 'crash1', 'crash2', 'ride'];
   return {
     id: newId(),
-    name: 'Alesis Nitro Max',
-    pieces: ids.map((id) => makePiece(id)),
+    name: NITRO_MAX_NAME,
+    pieces: NITRO_MAX_PIECES.map((id) => makePiece(id)),
     locked: false,
     mirrored: false,
+    updatedAt: Date.now(),
+    template: { id: 'nitro-max', version: NITRO_MAX_TEMPLATE_VERSION },
+  };
+}
+
+/**
+ * Pure. Returns the preset with its pieces, locked and mirrored replaced by the Nitro Max
+ * default (and the template marker set). Keeps id and name. For the editor's "Reset to Nitro
+ * Max default" button: persist the result with kitStore.savePreset.
+ */
+export function resetToNitroMaxDefault(preset: KitPreset): KitPreset {
+  const d = createDefaultPreset();
+  return {
+    ...preset,
+    pieces: d.pieces,
+    locked: d.locked,
+    mirrored: d.mirrored,
+    template: d.template,
     updatedAt: Date.now(),
   };
 }

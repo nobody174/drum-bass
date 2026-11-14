@@ -124,8 +124,12 @@ function smfWithText(events: { tick: number; text?: string; note?: number }[]): 
   return new Uint8Array([...head, ...chunk("MTrk", tempoTrack), ...chunk("MTrk", body)]);
 }
 
-describe("disco flip (UNVERIFIED event format, synthetic test)", () => {
+/** A far-away tom marker makes the track Pro, which is when `d` flips notes. */
+const PRO = { tick: 9000, note: 110 };
+
+describe("disco flip (event format per GuitarGame_ChartFormats docs)", () => {
   const notes = [
+    PRO,
     { tick: 0, note: 97 },     // red, before the flip: snare
     { tick: 480, text: "[mix 3 drums0d]" },
     { tick: 480, note: 97 },   // red in flip: hi-hat
@@ -142,12 +146,39 @@ describe("disco flip (UNVERIFIED event format, synthetic test)", () => {
   });
 
   it("only affects the difficulty named by the event, and ignores dnoflip / other flags", () => {
-    const hardOnly = parseCloneHeroMidi(smfWithText([{ tick: 0, text: "[mix 2 drums0d]" }, { tick: 0, note: 85 }, { tick: 0, note: 97 }]));
+    const hardOnly = parseCloneHeroMidi(smfWithText([PRO, { tick: 0, text: "[mix 2 drums0d]" }, { tick: 0, note: 85 }, { tick: 0, note: 97 }]));
     expect(hardOnly.notesByDifficulty.hard!.map((n) => n.piece)).toEqual(["hihat"]); // hard red flipped
     expect(hardOnly.notesByDifficulty.expert!.map((n) => n.piece)).toEqual(["snare"]); // expert untouched
     for (const flag of ["dnoflip", "easy", "easynokick", ""]) {
-      const r = parseCloneHeroMidi(smfWithText([{ tick: 0, text: `[mix 3 drums0${flag}]` }, { tick: 0, note: 97 }]));
+      const r = parseCloneHeroMidi(smfWithText([PRO, { tick: 0, text: `[mix 3 drums0${flag}]` }, { tick: 0, note: 97 }]));
       expect(r.notesByDifficulty.expert!.map((n) => n.piece)).toEqual(["snare"]);
+    }
+  });
+
+  it("accepts the unbracketed / underscore event spellings and other drum configs (drums3d)", () => {
+    for (const text of ["mix 3 drums0d", "[mix_3_drums0d]", "[mix 3 drums3d]", "[MIX 3 DRUMS2D]"]) {
+      const r = parseCloneHeroMidi(smfWithText([PRO, { tick: 0, text }, { tick: 0, note: 97 }]));
+      expect(r.notesByDifficulty.expert!.map((n) => n.piece)).toEqual(["hihat"]);
+    }
+  });
+
+  it("does not flip notes on non-Pro tracks (d only swaps audio stems there)", () => {
+    const r = parseCloneHeroMidi(smfWithText([{ tick: 0, text: "[mix 3 drums0d]" }, { tick: 0, note: 97 }]));
+    expect(r.notesByDifficulty.expert!.map((n) => n.piece)).toEqual(["snare"]);
+  });
+
+  it("prefers Pro over 5-lane when tom markers and a base+5 note are both present", () => {
+    const r = parseCloneHeroMidi(smfWithText([PRO, { tick: 0, note: 100 }, { tick: 480, note: 101 }]));
+    expect(r.warnings.join(" ")).not.toMatch(/5-lane/);
+    expect(r.notesByDifficulty.expert!.map((n) => n.piece)).toEqual(["crash1"]); // base+5 ignored in Pro
+  });
+
+  it("covers every difficulty's note numbers and ignores markers 109/126/127", () => {
+    const bases = { easy: 60, medium: 72, hard: 84, expert: 96 } as const;
+    const evs = Object.values(bases).flatMap((b, i) => [0, 1, 2, 3, 4].map((o) => ({ tick: i * 10 + o, note: b + o })));
+    const r = parseCloneHeroMidi(smfWithText([...evs, { tick: 500, note: 109 }, { tick: 501, note: 126 }, { tick: 502, note: 127 }])).notesByDifficulty;
+    for (const d of ["easy", "medium", "hard", "expert"] as const) {
+      expect(r[d]!.map((n) => n.piece)).toEqual(["kick", "snare", "hihat", "ride", "crash1"]);
     }
   });
 

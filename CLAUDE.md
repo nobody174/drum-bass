@@ -29,8 +29,8 @@ After each milestone: short TL;DR in chat, details in `docs/`, and ask the user 
 
 ## Real kit reference
 
-`docs/reference/nitro-max-kit.md` and `nitro-max-kit.json` describe the real kit from photos: 1 crash, 1 ride, 3 toms, hi-hat with foot controller, exact placement, and MIDI notes from the manual. **Next task:** update the default preset and starter MIDI map to match (see the "Changes needed in the app" list in that file).
+`docs/reference/nitro-max-kit.md` and `nitro-max-kit.json` describe the real kit from photos: 1 crash, 1 ride, 3 toms, hi-hat with foot controller, exact placement, and MIDI notes from the manual. The default preset and starter MIDI map now match it (see `docs/m3-kit-apply.md`). The notes come from the manual's PDF text and are still unverified on the real kit: use the "Learn all pads" wizard and log results in `docs/m3-kit-verification.md`. Never commit photos of the kit (the repo is public).
 
 ## Current status
 
-M0 and M1 done and phone-tested. M2 written (Clone Hero import, falling-lane player, scoring, library, synthetic demo song); awaiting phone test. Unverified: song.ini delay sign, RB note numbers and disco-flip events (need a real chart). See docs/m2-*.md.
+M0 and M1 done and phone-tested. Real Nitro Max kit applied (with a safe saved-kit migration), "Learn all pads" wizard, and M3 kit view (approach rings, switchable with falling lanes) written; awaiting phone test along with M2 (Clone Hero import, falling-lane player, scoring, library, synthetic demo song). Chart note numbers, mix/disco events, .chart lanes and song.ini delay sign are now verified against official/community docs (no real file yet); still unverified: tom markers across difficulties, real-file behaviour, audio sync on the phone. See docs/m2-*.md.

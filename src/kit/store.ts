@@ -1,5 +1,6 @@
 import { openAppDb } from '../storage/db';
 import { createDefaultPreset } from './model';
+import { MIGRATION_DONE_VALUE, MIGRATION_META_KEY, planNitroMaxMigration } from './migrate';
 import type { KitPreset } from './types';
 
 export interface KitBackend {
@@ -60,6 +61,20 @@ export interface KitStore {
   setActiveId(id: string): Promise<void>;
   /** Creates + activates the default Nitro Max preset when empty. Returns the active preset. */
   ensureDefault(): Promise<KitPreset>;
+  /**
+   * One-time upgrade of saved presets to the real Nitro Max kit (see ./migrate.ts). Called by
+   * ensureDefault; idempotent (recorded in meta), safe to call directly.
+   */
+  migrate(): Promise<KitMigrationResult>;
+}
+
+export interface KitMigrationResult {
+  /** True when the migration had already run (nothing done). */
+  skipped: boolean;
+  /** Ids of presets replaced in place by the new default. */
+  replacedIds: string[];
+  /** Ids of presets added next to a user-modified one. */
+  addedIds: string[];
 }
 
 export function createKitStore(backend: KitBackend): KitStore {
@@ -78,6 +93,17 @@ export function createKitStore(backend: KitBackend): KitStore {
     return fallback;
   };
 
+  const migrate = async (): Promise<KitMigrationResult> => {
+    if ((await backend.getMeta(MIGRATION_META_KEY)) === MIGRATION_DONE_VALUE) {
+      return { skipped: true, replacedIds: [], addedIds: [] };
+    }
+    const plan = planNitroMaxMigration(await backend.getAll());
+    for (const p of plan.replace) await backend.put(p);
+    for (const p of plan.add) await backend.put(p);
+    await backend.setMeta(MIGRATION_META_KEY, MIGRATION_DONE_VALUE);
+    return { skipped: false, replacedIds: plan.replace.map((p) => p.id), addedIds: plan.add.map((p) => p.id) };
+  };
+
   let ensuring: Promise<KitPreset> | null = null;
   const ensureOnce = async (): Promise<KitPreset> => {
     let all = await list();
@@ -85,7 +111,11 @@ export function createKitStore(backend: KitBackend): KitStore {
       const d = createDefaultPreset();
       await backend.put(d);
       await backend.setMeta(ACTIVE_KEY, d.id);
+      await backend.setMeta(MIGRATION_META_KEY, MIGRATION_DONE_VALUE); // fresh install: already new
       all = [d];
+    } else {
+      const r = await migrate();
+      if (!r.skipped) all = await list();
     }
     const id = (await getActiveId())!;
     return all.find((p) => p.id === id) ?? all[0]!;
@@ -105,6 +135,7 @@ export function createKitStore(backend: KitBackend): KitStore {
       return true;
     },
     getActiveId,
+    migrate,
     setActiveId: (id) => backend.setMeta(ACTIVE_KEY, id),
     ensureDefault() {
       // Serialize concurrent calls so the default is only created once.

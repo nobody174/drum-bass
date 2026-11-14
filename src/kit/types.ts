@@ -26,6 +26,8 @@ export interface KitPreset {
   locked: boolean;
   mirrored: boolean;
   updatedAt: number;
+  /** Set on presets created from a built-in template (additive; absent on older saved presets). */
+  template?: { id: "nitro-max"; version: number };
 }
 
 /** Result of looking up an incoming MIDI note in a preset. */

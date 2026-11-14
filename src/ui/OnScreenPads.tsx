@@ -3,7 +3,7 @@ import { inputBus } from "../midi/inputBus";
 import { STARTER_NOTES as N } from "../midi/starterMap";
 import { KEYBOARD_MAP, startVirtualKeyboard, stopVirtualKeyboard } from "../midi/virtualKeyboard";
 
-interface PadDef {
+export interface PadDef {
   id: string;
   label: string;
   note: number;
@@ -13,24 +13,21 @@ interface PadDef {
   round?: boolean;
 }
 
-// Right-handed kit seen from the drummer's seat. 6 columns x 3 rows.
-// Crash 2 (GM 57) is not in STARTER_NOTES yet.
-const CRASH2 = 57;
-const PADS: PadDef[] = [
+// The real Nitro Max: 1 crash, 1 ride, 3 toms, snare (head + rim), hi-hat (closed/open/pedal), kick.
+// Right-handed kit seen from the drummer's seat. 6 columns x 3 rows (rows share the height, so
+// every pad stays well above the 48px touch target on phones).
+export const PADS: PadDef[] = [
   { id: "crash1", label: "Crash", note: N.crash1, color: "var(--c-crash)", area: "1 / 1 / 2 / 2", round: true },
   { id: "tom1", label: "Tom 1", note: N.tom1, color: "var(--c-tom1)", area: "1 / 2 / 2 / 3" },
-  { id: "tom2", label: "Tom 2", note: N.tom2, color: "var(--c-tom2)", area: "1 / 3 / 2 / 4" },
-  { id: "crash2", label: "Crash 2", note: CRASH2, color: "var(--c-crash)", area: "1 / 4 / 2 / 5", round: true },
+  { id: "tom2", label: "Tom 2", note: N.tom2, color: "var(--c-tom2)", area: "1 / 3 / 2 / 5" },
   { id: "ride", label: "Ride", note: N.ride, color: "var(--c-ride)", area: "1 / 5 / 2 / 7", round: true },
   { id: "hatC", label: "Hat closed", note: N.hihatClosed, color: "var(--c-hat)", area: "2 / 1 / 3 / 2", round: true },
   { id: "snare", label: "Snare", note: N.snare, color: "var(--c-snare)", area: "2 / 2 / 3 / 4", round: true },
   { id: "rim", label: "Rim", note: N.snareRim, color: "var(--c-snare)", area: "2 / 4 / 3 / 5" },
-  { id: "tom3", label: "Tom 3", note: N.tom3, color: "var(--c-tom3)", area: "2 / 5 / 3 / 6" },
-  { id: "tom4", label: "Floor tom", note: N.tom4, color: "var(--c-tom4)", area: "2 / 6 / 3 / 7" },
+  { id: "tom3", label: "Tom 3", note: N.tom3, color: "var(--c-tom3)", area: "2 / 5 / 3 / 7" },
   { id: "hatO", label: "Hat open", note: N.hihatOpen, color: "var(--c-hat)", area: "3 / 1 / 4 / 2", round: true },
   { id: "hatP", label: "Hat pedal", note: N.hihatPedal, color: "var(--c-hat)", area: "3 / 2 / 4 / 3" },
-  { id: "kick", label: "Kick", note: N.kick, color: "var(--c-kick)", area: "3 / 3 / 4 / 5" },
-  { id: "bell", label: "Ride bell", note: N.rideBell, color: "var(--c-ride)", area: "3 / 5 / 4 / 7" },
+  { id: "kick", label: "Kick", note: N.kick, color: "var(--c-kick)", area: "3 / 3 / 4 / 7" },
 ];
 
 const LEVELS = [
@@ -39,6 +36,7 @@ const LEVELS = [
   { id: "hard", label: "Hard", velocity: 127 },
 ] as const;
 
+// PADS keeps its layout in the module so tests can check it.
 const KEY_LABEL = new Map(KEYBOARD_MAP.map((b) => [b.note, b.label]));
 
 export function OnScreenPads() {

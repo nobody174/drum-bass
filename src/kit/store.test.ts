@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createDefaultPreset, duplicatePreset, renamePreset } from './model';
+import { createDefaultPreset, duplicatePreset, movePiece, renamePreset } from './model';
+import { MIGRATION_META_KEY, NITRO_MAX_EXTRA_NAME, OLD_DEFAULT_PIECES, isOldDefaultKit } from './migrate';
 import { createIdbBackend, createKitStore, kitStore, type KitBackend } from './store';
 import type { KitPreset } from './types';
 
@@ -127,5 +128,88 @@ describe('idb backend open caching', () => {
     close();
     await b.getAll();
     expect(calls).toBe(2);
+  });
+});
+
+describe('migration to the real Nitro Max kit', () => {
+  const oldDefault = (): KitPreset => ({
+    id: 'old-1',
+    name: 'Alesis Nitro Max',
+    pieces: structuredClone(OLD_DEFAULT_PIECES) as KitPreset['pieces'],
+    locked: false,
+    mirrored: false,
+    updatedAt: 1,
+  });
+
+  it('recognises the frozen old default', () => {
+    expect(isOldDefaultKit(oldDefault())).toBe(true);
+    expect(isOldDefaultKit(createDefaultPreset())).toBe(false);
+  });
+
+  it('upgrades an unmodified old default in place and keeps it active', async () => {
+    const b = memoryBackend();
+    const old = oldDefault();
+    b.kits.set(old.id, old);
+    b.meta.set('activeKitId', old.id);
+    const s = createKitStore(b);
+    const active = await s.ensureDefault();
+    expect(active.id).toBe('old-1');
+    expect(active.name).toBe('Alesis Nitro Max');
+    expect(active.template).toEqual({ id: 'nitro-max', version: 2 });
+    expect(active.pieces.map((p) => p.id)).not.toContain('crash2');
+    expect(active.pieces.find((p) => p.id === 'snare')!.midiNotes.rim).toBe(40);
+    expect(await s.getActiveId()).toBe('old-1');
+    expect((await s.listPresets()).length).toBe(1);
+    expect(b.meta.get(MIGRATION_META_KEY)).toBe('2');
+  });
+
+  it('never touches a modified preset; adds the real kit as an extra one', async () => {
+    const b = memoryBackend();
+    const mod = movePiece(oldDefault(), 'snare', 0.35, 0.6);
+    b.kits.set(mod.id, structuredClone(mod));
+    const s = createKitStore(b);
+    const active = await s.ensureDefault();
+    expect(active.id).toBe('old-1');
+    expect(await s.getPreset('old-1')).toEqual(mod);
+    const names = (await s.listPresets()).map((p) => p.name);
+    expect(names).toEqual(['Alesis Nitro Max', NITRO_MAX_EXTRA_NAME].sort((a, c) => a.localeCompare(c)));
+    const extra = (await s.listPresets()).find((p) => p.name === NITRO_MAX_EXTRA_NAME)!;
+    expect(extra.template?.version).toBe(2);
+    expect(extra.pieces.length).toBe(8);
+  });
+
+  it('never touches renamed or already templated presets', async () => {
+    const b = memoryBackend();
+    const renamed = { ...oldDefault(), id: 'r', name: 'My kit' };
+    const fresh = { ...createDefaultPreset(), id: 'n' };
+    b.kits.set('r', structuredClone(renamed));
+    b.kits.set('n', structuredClone(fresh));
+    const s = createKitStore(b);
+    expect((await s.migrate()).replacedIds).toEqual([]);
+    expect(await s.getPreset('r')).toEqual(renamed);
+    expect(await s.getPreset('n')).toEqual(fresh);
+    expect((await s.listPresets()).length).toBe(2);
+  });
+
+  it('is idempotent: the second run is a no-op', async () => {
+    const b = memoryBackend();
+    const mod = movePiece(oldDefault(), 'snare', 0.35, 0.6);
+    b.kits.set(mod.id, structuredClone(mod));
+    const s = createKitStore(b);
+    const first = await s.migrate();
+    expect(first.skipped).toBe(false);
+    expect(first.addedIds.length).toBe(1);
+    const snapshot = JSON.stringify([...b.kits.values()]);
+    const second = await s.migrate();
+    expect(second).toEqual({ skipped: true, replacedIds: [], addedIds: [] });
+    await s.ensureDefault();
+    expect(JSON.stringify([...b.kits.values()])).toBe(snapshot);
+    expect((await s.listPresets()).length).toBe(2);
+  });
+
+  it('a fresh install records the migration as done', async () => {
+    const b = memoryBackend();
+    await createKitStore(b).ensureDefault();
+    expect(b.meta.get(MIGRATION_META_KEY)).toBe('2');
   });
 });

@@ -4,8 +4,9 @@ import type { Difficulty } from "../chart/types";
 import { kitStore, type KitPreset } from "../kit";
 import { songStore, type StoredSong } from "../storage/songs";
 import {
-  COUNT_INS, DIFFICULTIES, MIXES, defaultDifficulty, defaultMix, mixAvailability, playHref, remapLine, type PlayParams,
+  COUNT_INS, DIFFICULTIES, MIXES, defaultDifficulty, defaultMix, mixAvailability, playHref, remapLine, loadApproach, loadDisplayMode, saveApproach, saveDisplayMode, type PlayParams,
 } from "./play/params";
+import { MAX_APPROACH_SEC, MIN_APPROACH_SEC } from "../render/kitGeometry";
 import "../styles/play.css";
 
 export default function PrePlay({ songId }: { songId: string }) {
@@ -33,7 +34,7 @@ export default function PrePlay({ songId }: { songId: string }) {
         setSong(s);
         setPreset(p);
         setOffset(s.offsetMs);
-        setParams({ difficulty: defaultDifficulty(present), mix: defaultMix(roles), countIn: 4 });
+        setParams({ difficulty: defaultDifficulty(present), mix: defaultMix(roles), countIn: 4, display: loadDisplayMode(), approach: loadApproach() });
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : String(e));
       }
@@ -75,7 +76,11 @@ export default function PrePlay({ songId }: { songId: string }) {
   }
   if (!song || !params || !preset) return <p class="muted" style={{ padding: 12 }}>Loading...</p>;
 
-  const set = (patch: Partial<PlayParams>) => setParams({ ...params, ...patch });
+  const set = (patch: Partial<PlayParams>) => {
+    if (patch.display) saveDisplayMode(patch.display);
+    if (patch.approach !== undefined) saveApproach(patch.approach);
+    setParams({ ...params, ...patch });
+  };
   const noteCount = remap?.notes.length ?? 0;
 
   return (
@@ -103,6 +108,11 @@ export default function PrePlay({ songId }: { songId: string }) {
               <button key={m.id} disabled={!avail[m.id]} aria-pressed={params.mix === m.id} onClick={() => set({ mix: m.id })}>{m.label}</button>
             ))}
           </div>
+          <span class="lbl">Display</span>
+          <div class="seg" role="group" aria-label="Display mode">
+            <button aria-pressed={params.display === "lanes"} onClick={() => set({ display: "lanes" })}>Lanes</button>
+            <button aria-pressed={params.display === "kit"} onClick={() => set({ display: "kit" })}>Kit view</button>
+          </div>
           <span class="lbl">Count-in beats</span>
           <div class="seg" role="group" aria-label="Count-in beats">
             {COUNT_INS.map((c) => (
@@ -118,6 +128,16 @@ export default function PrePlay({ songId }: { songId: string }) {
               onInput={(e) => saveOffset(Number((e.target as HTMLInputElement).value))} />
             <output>{offset > 0 ? "+" : ""}{offset} ms</output>
           </div>
+          {params.display === "kit" && (
+            <>
+              <label for="pp-approach">Kit view: ring approach time</label>
+              <div class="pp-range">
+                <input id="pp-approach" type="range" min={MIN_APPROACH_SEC} max={MAX_APPROACH_SEC} step={0.1} value={params.approach}
+                  onInput={(e) => set({ approach: Number((e.target as HTMLInputElement).value) })} />
+                <output>{params.approach.toFixed(1)} s</output>
+              </div>
+            </>
+          )}
           <p class="pp-note">If the chart feels early or late against the music, nudge this. Saved per song.</p>
           {saveErr && <p class="pp-notice" role="alert">Could not save offset: {saveErr}</p>}
           {remap && remap.remapped.length > 0 && (

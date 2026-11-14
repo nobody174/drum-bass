@@ -17,13 +17,13 @@ export const KEYBOARD_MAP: readonly KeyBinding[] = [
   { code: "KeyK", label: "K", note: STARTER_NOTES.hihatClosed, name: "Hi-hat closed" },
   { code: "KeyL", label: "L", note: STARTER_NOTES.hihatOpen, name: "Hi-hat open" },
   { code: "KeyN", label: "N", note: STARTER_NOTES.hihatPedal, name: "Hi-hat pedal" },
+  { code: "KeyM", label: "M", note: STARTER_NOTES.hihatHalfOpen, name: "Hi-hat half-open" },
+  { code: "KeyB", label: "B", note: STARTER_NOTES.hihatSplash, name: "Hi-hat splash" },
   { code: "KeyF", label: "F", note: STARTER_NOTES.tom1, name: "Tom 1" },
   { code: "KeyD", label: "D", note: STARTER_NOTES.tom2, name: "Tom 2" },
   { code: "KeyS", label: "S", note: STARTER_NOTES.tom3, name: "Tom 3" },
-  { code: "KeyA", label: "A", note: STARTER_NOTES.tom4, name: "Floor tom" },
-  { code: "KeyU", label: "U", note: STARTER_NOTES.crash1, name: "Crash 1" },
+  { code: "KeyU", label: "U", note: STARTER_NOTES.crash1, name: "Crash" },
   { code: "KeyI", label: "I", note: STARTER_NOTES.ride, name: "Ride" },
-  { code: "KeyO", label: "O", note: STARTER_NOTES.rideBell, name: "Ride bell" },
 ];
 
 const BY_CODE = new Map(KEYBOARD_MAP.map((b) => [b.code, b]));

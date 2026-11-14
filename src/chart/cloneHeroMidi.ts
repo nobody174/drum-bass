@@ -6,8 +6,9 @@ import { readTrackTexts } from "./midiText";
 
 /**
  * Rock Band 3 / Clone Hero `PART DRUMS` note layout.
- * UNVERIFIED against a real file: taken from SPEC 9.1 and community docs. fixtures/local was empty
- * when this was written. Re-check these numbers as soon as a real notes.mid is available.
+ * Note numbers, markers, mix events and 5-lane rules VERIFIED against the GuitarGame_ChartFormats docs
+ * (https://thenathannator.github.io/GuitarGame_ChartFormats/Chart-File-Formats/mid-format/Tracks/Drums).
+ * Still unchecked against a real file: that tom markers apply to all difficulties (the doc is silent).
  */
 export const DIFFICULTY_BASE: Record<Difficulty, number> = { expert: 96, hard: 84, medium: 72, easy: 60 };
 /** Lane offsets from the difficulty base note: kick, red (snare), yellow, blue, green (5-lane: orange), +5 green in 5-lane files. */
@@ -15,15 +16,15 @@ export const LANE_OFFSETS: Lane[] = ["kick", "red", "yellow", "blue", "green"];
 export const DOUBLE_KICK_NOTE = 95; // Expert only
 export const TOM_MARKER_NOTES = { yellow: 110, blue: 111, green: 112 } as const;
 /** Known non-gem notes (ignored): solo 103, energy 116, fills 120-124, etc. Listed for documentation. */
-export const IGNORED_NOTES_DOC = [103, 105, 106, 116, 120, 121, 122, 123, 124] as const;
+export const IGNORED_NOTES_DOC = [103, 105, 106, 109, 116, 120, 121, 122, 123, 124, 126, 127] as const;
 
 /**
- * Disco flip: UNVERIFIED (no real file was available). Format taken from Rock Band 3 / Clone Hero docs:
- * text events on PART DRUMS `[mix <0-3> drums<N><flags>]` (0 easy .. 3 expert). Flags: "" normal,
- * "d" disco flip (charted red = hi-hat, charted yellow = snare), "dnoflip" / "easy" / "easynokick" are NOT flips.
- * A mix event applies from its tick until the next mix event of the same difficulty.
+ * Disco flip (event format per the doc above): text events `[mix <0-3> drums<N><flags>]` (0 easy .. 3 expert;
+ * brackets optional, spaces or underscores). Flag "d": on Pro it swaps red with yellow cymbal/tom (charted red =
+ * hi-hat, charted yellow = snare); on non-Pro it only swaps audio stems. "dnoflip" / "easy" / "easynokick" do not
+ * swap notes. A mix event resets all modifications and applies until the next mix event of that difficulty.
  */
-const MIX_EVENT = /^\[mix\s+([0-3])\s+drums\d+([a-z]*)\]$/i;
+const MIX_EVENT = /^\[?mix[\s_]+([0-3])[\s_]+drums\d+([a-z]*)\]?$/i; // brackets optional, spaces or underscores
 const DIFF_INDEX: Record<Difficulty, number> = { easy: 0, medium: 1, hard: 2, expert: 3 };
 
 type FlipEvents = Record<number, { tick: number; flip: boolean }[]>;
@@ -121,8 +122,9 @@ export function parseCloneHeroMidi(input: MidiInput, options: CloneHeroMidiOptio
   }
 
   // 5-lane detection: any note at base+5 of any difficulty.
-  const fiveLane = (Object.values(DIFFICULTY_BASE) as number[]).some((b) => track.notes.some((n) => n.midi === b + 5));
-  if (fiveLane) warnings.push("5-lane drum chart detected; lane layout is a best guess (unverified).");
+  // Tom markers mean Pro; the spec says to prefer Pro when both signals are present, so markers veto 5-lane.
+  const fiveLane = !anyMarker && (Object.values(DIFFICULTY_BASE) as number[]).some((b) => track.notes.some((n) => n.midi === b + 5));
+  if (fiveLane) warnings.push("5-lane drum chart detected; yellow/orange are cymbals, blue/green toms.");
 
   const out: Partial<Record<Difficulty, NoteEvent[]>> = {};
   for (const diff of Object.keys(DIFFICULTY_BASE) as Difficulty[]) {
@@ -149,7 +151,8 @@ export function parseCloneHeroMidi(input: MidiInput, options: CloneHeroMidiOptio
         isTom = anyMarker ? inside(merged[g.lane], g.tick) : policy === "toms";
       }
       let lane: Lane = g.lane;
-      if (!fiveLane && (lane === "red" || lane === "yellow") && flippedAt(disco[DIFF_INDEX[diff]], g.tick)) {
+      // Only Pro (tom markers present): on non-Pro tracks `d` swaps audio stems, not the notes.
+      if (anyMarker && (lane === "red" || lane === "yellow") && flippedAt(disco[DIFF_INDEX[diff]], g.tick)) {
         // Disco flip: charted red is the hi-hat, charted yellow is the snare.
         lane = lane === "red" ? "yellow" : "red";
         isTom = false;
@@ -167,6 +170,6 @@ export function parseCloneHeroMidi(input: MidiInput, options: CloneHeroMidiOptio
     out[diff] = dedupeNotes(sortNotes(notes));
   }
   if (!Object.keys(out).length) warnings.push("PART DRUMS contains no playable notes.");
-  if (discoNotes) warnings.push(`Disco flip applied to ${discoNotes} notes (red and yellow swapped; event format unverified).`);
+  if (discoNotes) warnings.push(`Disco flip applied to ${discoNotes} notes (red and yellow swapped).`);
   return { format: "clonehero-mid", notesByDifficulty: out, meta: tempoMetaFromMidi(midi, tempo), warnings };
 }

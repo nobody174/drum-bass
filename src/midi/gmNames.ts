@@ -1,30 +1,43 @@
 import { STARTER_NOTES } from "./starterMap";
 
-/** Human readable names for the starter mapping (preferred) ... */
-const STARTER_LABELS: Record<keyof typeof STARTER_NOTES, string> = {
+/** Names for the Nitro Max default map (used by the monitor only, shown as "Kit: ..."). */
+const KIT_LABELS: Record<keyof typeof STARTER_NOTES, string> = {
   kick: "Kick",
   snare: "Snare",
   snareRim: "Snare rim",
-  tom1: "Tom 1 (high)",
-  tom2: "Tom 2 (mid)",
-  tom3: "Tom 3 (low)",
-  tom4: "Floor tom",
+  tom1: "Tom 1",
+  tom2: "Tom 2",
+  tom3: "Tom 3",
   hihatClosed: "Hi-hat closed",
-  hihatPedal: "Hi-hat pedal",
+  hihatHalfOpen: "Hi-hat half-open",
   hihatOpen: "Hi-hat open",
-  crash1: "Crash 1",
+  hihatPedal: "Hi-hat pedal",
+  hihatSplash: "Hi-hat splash",
+  crash1: "Crash",
   ride: "Ride",
-  rideBell: "Ride bell",
 };
 
-/** ... plus a few extra General MIDI percussion names as a fallback guess. */
-const GM_EXTRA: Record<number, string> = {
+/** General MIDI percussion names. Charts and MIDI imports use GM, so these stay GM. */
+export const GM_NAMES: Record<number, string> = {
   35: "Acoustic bass drum",
+  36: "Bass drum 1",
+  37: "Side stick",
+  38: "Acoustic snare",
   39: "Hand clap",
   40: "Snare (electric/rim)",
   41: "Low floor tom",
+  42: "Closed hi-hat",
+  43: "High floor tom",
+  44: "Pedal hi-hat",
+  45: "Low tom",
+  46: "Open hi-hat",
+  47: "Low-mid tom",
+  48: "Hi-mid tom",
+  49: "Crash 1",
   50: "High tom",
+  51: "Ride 1",
   52: "China",
+  53: "Ride bell",
   54: "Tambourine",
   55: "Splash",
   56: "Cowbell",
@@ -32,10 +45,25 @@ const GM_EXTRA: Record<number, string> = {
   59: "Ride 2",
 };
 
-/** Guess a drum name for a MIDI note, or "?" when unknown. */
-export function guessDrumName(note: number): string {
+/** Name from the Nitro Max kit map, or null when the note is not part of it. */
+export function kitNoteName(note: number): string | null {
   for (const k of Object.keys(STARTER_NOTES) as (keyof typeof STARTER_NOTES)[]) {
-    if (STARTER_NOTES[k] === note) return STARTER_LABELS[k];
+    if (STARTER_NOTES[k] === note) return KIT_LABELS[k];
   }
-  return GM_EXTRA[note] ?? "?";
+  return null;
+}
+
+/** General MIDI name, or null when unknown. */
+export function gmNoteName(note: number): string | null {
+  return GM_NAMES[note] ?? null;
+}
+
+/**
+ * Monitor name for a MIDI note: "Kit: <name>" when it matches the Nitro Max map, the GM name
+ * otherwise, "?" when unknown.
+ */
+export function guessDrumName(note: number): string {
+  const kit = kitNoteName(note);
+  if (kit) return `Kit: ${kit}`;
+  return gmNoteName(note) ?? "?";
 }

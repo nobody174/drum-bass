@@ -2,15 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks"
 import {
   PIECE_LIMITS, PIECE_ORDER, addPiece, canAdd, canRemove, clearNote, countGroup, createDefaultPreset, duplicatePreset,
   findConflicts, kitStore, matchNote, movePiece, nextKitName, pieceGroup, removePiece, renamePreset, resizePiece,
-  setLocked, setMirrored, setNote, uniqueName,
+  resetToNitroMaxDefault, setLocked, setMirrored, setNote, uniqueName,
 } from "../kit";
 import type { KitPreset, NoteMatch, PieceId } from "../kit";
 import { inputBus, startVirtualKeyboard, stopVirtualKeyboard } from "../midi";
 import type { DrumInputEvent } from "../midi";
 import { Stage, GRID_STEP } from "./kit/Stage";
 import { VirtualPads } from "./kit/VirtualPads";
+import { LearnWizard } from "./kit/LearnWizard";
+import type { NoteEffect } from "./kit/learnPlan";
 import { FlashStore } from "./kit/flash";
-import { PIECE_NAMES, zonesFor } from "./kit/zones";
+import { PIECE_NAMES, stepLabel, zoneName, zonesFor } from "./kit/zones";
 import "./kitEditor.css";
 
 const SAVE_DEBOUNCE_MS = 400;
@@ -20,7 +22,7 @@ type SaveState = "idle" | "pending" | "saved" | "error";
 interface LastNote { ev: DrumInputEvent; match: NoteMatch | null; learning: boolean }
 interface LearnTarget { id: PieceId; zone: string }
 
-const label = (id: PieceId, zone?: string) => PIECE_NAMES[id] + (zone && zone !== "head" ? ` ${zone}` : zone === "head" && id === "snare" ? " head" : "");
+const label = (id: PieceId, zone?: string) => (zone ? stepLabel(id, zone) : PIECE_NAMES[id]);
 
 export default function KitEditor() {
   const [preset, setPreset] = useState<KitPreset | null>(null);
@@ -37,6 +39,9 @@ export default function KitEditor() {
   const [busyUi, setBusyUi] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState("");
+  const [wizard, setWizard] = useState(false);
+  const [wizardTarget, setWizardTarget] = useState<PieceId | null>(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   const presetRef = useRef<KitPreset | null>(null);
   const dirty = useRef(false);
@@ -46,6 +51,7 @@ export default function KitEditor() {
   const saving = useRef<Promise<void> | null>(null);
   const noSave = useRef(false);
   const learnRef = useRef<LearnTarget | null>(null);
+  const wizardRef = useRef(false);
   const nameDraftRef = useRef("");
   const flashes = useMemo(() => new FlashStore(), []);
 
@@ -140,7 +146,7 @@ export default function KitEditor() {
   useEffect(() => {
     return inputBus.subscribe((ev) => {
       const p = presetRef.current;
-      if (learnRef.current) { // this hit is being captured by Learn: do not show/flash the old mapping
+      if (learnRef.current || wizardRef.current) { // this hit is being captured by Learn: do not show/flash the old mapping
         setLast({ ev, match: null, learning: true });
         return;
       }
@@ -174,6 +180,7 @@ export default function KitEditor() {
   }, [learn, commit]);
 
   learnRef.current = learn;
+  wizardRef.current = wizard;
   const selected = preset?.pieces.find((p) => p.id === selectedId) ?? null;
   // Drop learn / selection if the piece disappeared.
   useEffect(() => {
@@ -202,7 +209,7 @@ export default function KitEditor() {
     finally { busy.current = false; if (alive.current) setBusyUi(false); }
   };
 
-  const resetSelection = () => { setSelectedId(null); setLearn(null); setConfirmDel(false); };
+  const resetSelection = () => { setSelectedId(null); setLearn(null); setConfirmDel(false); setConfirmReset(false); };
 
   const switchPreset = (id: string) => exclusive(async () => {
     if (!presetRef.current || id === presetRef.current.id) return;
@@ -227,6 +234,26 @@ export default function KitEditor() {
     setPreset(p); resetSelection(); setSave("saved");
     await refreshList();
   });
+
+  /** Wizard output: store or clear notes. setNote/clearNote work while the layout is locked. */
+  const applyNotes = useCallback((effects: NoteEffect[]) => {
+    commit((p) => effects.reduce((acc, e) => (e.note === null ? clearNote(acc, e.piece, e.zone) : setNote(acc, e.piece, e.zone, e.note)), p));
+  }, [commit]);
+
+  const startWizard = () => { setLearn(null); setLearnMsg(null); setConfirmReset(false); setWizard(true); };
+  const exitWizard = useCallback((finished: boolean) => {
+    setWizard(false); setWizardTarget(null);
+    void flush(); // save now instead of waiting for the debounce
+    if (finished) setLearnMsg("Learn all pads finished. Notes are saved.");
+  }, [flush]);
+
+  /** Replaces pieces, positions and notes with the Nitro Max defaults (the other model function decides the details). */
+  const doReset = () => {
+    setConfirmReset(false);
+    // resetToNitroMaxDefault sets mirrored back to false; re-apply the user's choice (mirrors the new default pieces).
+    commit((p) => setMirrored(resetToNitroMaxDefault(setLocked(p, false)), p.mirrored));
+    setSelectedId(null); setLearn(null); setLearnMsg(null);
+  };
 
   const newPreset = () => void adopt((names) => ({ ...createDefaultPreset(), name: nextKitName(names) }));
   const duplicate = () => void adopt((names) => duplicatePreset(presetRef.current!, uniqueName(`${presetRef.current!.name} copy`, names)));
@@ -277,23 +304,23 @@ export default function KitEditor() {
       <div class="ke-left">
         <Stage
           pieces={preset.pieces}
-          locked={locked}
+          locked={locked || wizard}
           mirrored={preset.mirrored}
           snap={snap}
-          selectedId={selectedId}
+          selectedId={wizard ? wizardTarget : selectedId}
           flashes={flashes}
-          onSelect={(id) => { setSelectedId(id); if (learn && id !== learn.id) setLearn(null); }}
+          onSelect={(id) => { if (wizard) return; setSelectedId(id); if (learn && id !== learn.id) setLearn(null); }}
           onMove={(id, x, y) => commit((p) => movePiece(p, id, x, y, snap ? { snap: GRID_STEP } : undefined))}
           onResize={(id, s) => commit((p) => resizePiece(p, id, s))}
         />
         <div class="ke-toolbar" role="toolbar" aria-label="Stage tools">
-          <button class={`ke-btn${locked ? " on" : ""}`} aria-pressed={locked} onClick={() => commit((p) => setLocked(p, !p.locked))}>
+          <button class={`ke-btn${locked ? " on" : ""}`} aria-pressed={locked} disabled={wizard} onClick={() => commit((p) => setLocked(p, !p.locked))}>
             {locked ? "Locked" : "Unlocked"}
           </button>
           <button class={`ke-btn${preset.mirrored ? " on" : ""}`} aria-pressed={preset.mirrored} onClick={() => commit((p) => setMirrored(p, !p.mirrored))}>
             Left-handed view
           </button>
-          <button class={`ke-btn${snap ? " on" : ""}`} aria-pressed={snap} disabled={locked} onClick={() => setSnap(!snap)}>
+          <button class={`ke-btn${snap ? " on" : ""}`} aria-pressed={snap} disabled={locked || wizard} onClick={() => setSnap(!snap)}>
             Snap
           </button>
           <span class={`ke-saved ${save}`} role="status" aria-live="polite">
@@ -302,12 +329,17 @@ export default function KitEditor() {
           {save === "error" && <button class="ke-btn" onClick={() => void flush()}>Retry save</button>}
         </div>
         {notice && <div class="ke-notice" role="alert">{notice}</div>}
+        {learnMsg && !selected && !wizard && <div class="ke-learnmsg" role="status">{learnMsg}</div>}
         <div class="ke-hint">
           {locked ? "Locked: tap a piece to test-flash it. Unlock to move, resize, add or remove. Left-handed view and Learn still work." : "Drag to move. Pinch, drag the amber handle, or use the slider to resize."}
         </div>
       </div>
 
       <div class="ke-panel">
+        {wizard ? (
+          <LearnWizard preset={preset} onApply={applyNotes} onTarget={setWizardTarget} onExit={exitWizard} />
+        ) : (<>
+        <button class="ke-btn accent ke-learnall" onClick={startWizard}>Learn all pads</button>
         <details open class="ke-sec">
           <summary>Monitor</summary>
           <div class="ke-monitor" role="status" aria-live="off">
@@ -341,14 +373,14 @@ export default function KitEditor() {
                   onInput={(e) => commit((p) => resizePiece(p, selected.id, Number((e.target as HTMLInputElement).value)))}
                 />
               </label>
-              <p class="ke-warnbox">Note numbers are UNVERIFIED General MIDI starter values. Use Learn on the real kit to confirm.</p>
-              {zonesFor(selected.id).map((zone) => {
+              <p class="ke-warnbox">Note numbers come from the manual and are not yet verified on the real kit. Use Learn (or Learn all pads) to confirm.</p>
+              {zonesFor(selected.id, selected.midiNotes).map((zone) => {
                 const note = selected.midiNotes[zone];
                 const active = learn?.id === selected.id && learn.zone === zone;
                 return (
                   <div class={`ke-zone${active ? " listening" : ""}`} key={zone}>
                     <div class="ke-zone-name">
-                      <span>{zone}</span>
+                      <span>{zoneName(zone)}</span>
                       <b>{note === undefined ? "unset" : note}</b>
                     </div>
                     {active ? (
@@ -456,7 +488,25 @@ export default function KitEditor() {
             )}
           </div>
           {list.length <= 1 && <p class="muted ke-small">The last preset cannot be deleted.</p>}
+          <div class="ke-row ke-reset">
+            {confirmReset ? (
+              <div class="ke-confirm" role="alertdialog" aria-label="Reset to Nitro Max default">
+                <p>
+                  Reset the layout (pieces, positions, sizes) and all MIDI notes to the Nitro Max default? Your learned notes and layout are lost.
+                  The kit name and the mirrored (left-handed) setting are kept.
+                  {locked && <b> The kit is locked; resetting unlocks it.</b>}
+                </p>
+                <div class="ke-row">
+                  <button class="ke-btn danger" disabled={busyUi} onClick={doReset}>{locked ? "Unlock and reset" : "Reset"}</button>
+                  <button class="ke-btn" onClick={() => setConfirmReset(false)}>Keep my kit</button>
+                </div>
+              </div>
+            ) : (
+              <button class="ke-btn" disabled={busyUi} onClick={() => setConfirmReset(true)}>Reset to Nitro Max default</button>
+            )}
+          </div>
         </details>
+        </>)}
       </div>
     </div>
   );

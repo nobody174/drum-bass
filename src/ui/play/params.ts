@@ -2,6 +2,36 @@ import type { Difficulty, StemRole } from "../../chart/types";
 import type { PieceId } from "../../kit/types";
 import type { MixMode } from "../../audio/transport";
 import { planMix } from "../../audio/stems";
+import { DEFAULT_APPROACH_SEC, clampApproach } from "../../render/kitGeometry";
+
+export type DisplayMode = "lanes" | "kit";
+export const DISPLAY_KEY = "drum-bass.settings.display";
+export const APPROACH_KEY = "drum-bass.settings.approach";
+
+function readStore(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+function writeStore(key: string, v: string): void {
+  try {
+    localStorage.setItem(key, v);
+  } catch {
+    /* private mode or blocked storage: the setting just does not persist */
+  }
+}
+
+export const parseDisplayMode = (v: string | null | undefined): DisplayMode | null => (v === "lanes" || v === "kit" ? v : null);
+/** Persisted default display mode (lanes unless the user chose otherwise). */
+export const loadDisplayMode = (): DisplayMode => parseDisplayMode(readStore(DISPLAY_KEY)) ?? "lanes";
+export const saveDisplayMode = (m: DisplayMode): void => writeStore(DISPLAY_KEY, m);
+export const loadApproach = (): number => {
+  const raw = readStore(APPROACH_KEY);
+  return raw === null || raw.trim() === "" ? DEFAULT_APPROACH_SEC : clampApproach(Number(raw));
+};
+export const saveApproach = (s: number): void => writeStore(APPROACH_KEY, String(clampApproach(s)));
 
 export const DIFFICULTIES: Difficulty[] = ["easy", "medium", "hard", "expert"];
 export const MIXES: { id: MixMode; label: string }[] = [
@@ -16,6 +46,10 @@ export interface PlayParams {
   difficulty: Difficulty;
   mix: MixMode;
   countIn: number;
+  /** Renderer: falling lanes or notes on the kit. */
+  display: DisplayMode;
+  /** Kit view: seconds a ring is visible before its note. */
+  approach: number;
 }
 
 export function mixAvailability(roles: readonly StemRole[]): Record<MixMode, boolean> {
@@ -37,7 +71,7 @@ export function defaultMix(roles: readonly StemRole[]): MixMode {
 }
 
 export function playHref(songId: string, p: PlayParams): string {
-  return `#/play/${encodeURIComponent(songId)}?d=${p.difficulty}&m=${p.mix}&c=${p.countIn}`;
+  return `#/play/${encodeURIComponent(songId)}?d=${p.difficulty}&m=${p.mix}&c=${p.countIn}&v=${p.display}&a=${p.approach}`;
 }
 
 export function parseParams(q: URLSearchParams, present: Difficulty[], roles: readonly StemRole[]): PlayParams {
@@ -49,6 +83,8 @@ export function parseParams(q: URLSearchParams, present: Difficulty[], roles: re
     difficulty: d && present.includes(d) ? d : defaultDifficulty(present),
     mix: m && MIXES.some((x) => x.id === m) ? m : defaultMix(roles),
     countIn: Number.isFinite(c) && c >= 0 && c <= 8 ? Math.round(c) : 4,
+    display: parseDisplayMode(q.get("v")) ?? loadDisplayMode(),
+    approach: q.get("a") !== null && q.get("a")!.trim() !== "" ? clampApproach(Number(q.get("a"))) : loadApproach(),
   };
 }
 

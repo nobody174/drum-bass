@@ -101,3 +101,55 @@
 .ke-learnbox { flex: 1 0 100%; border: 2px dashed var(--amber); border-radius: 8px; padding: 6px 8px 8px; margin-top: 4px; }
 .ke-learnbox > p:first-child { margin: 0; font-size: .82rem; color: var(--amber); }
 .ke-zone.listening { flex-wrap: wrap; }
+
+/* Learn all pads wizard + reset confirm */
+.ke-learnall { width: 100%; }
+.ke-reset { margin-top: 8px; }
+.ke-confirm { border: 2px solid var(--accent); border-radius: 8px; padding: 8px 10px; background: rgba(229, 50, 45, .08); }
+.ke-confirm p { margin: 0 0 8px; font-size: .85rem; }
+
+.kw { display: flex; flex-direction: column; gap: 8px; background: var(--panel); border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px 12px; min-width: 0; }
+.kw-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.kw-step { font: 400 1.15rem var(--font-head); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); }
+.kw-count { font-size: .8rem; }
+.kw-bar { height: 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.kw-bar i { display: block; height: 100%; background: var(--accent-2); transition: width .25s; }
+.kw-target { margin: 0; font: 400 2.4rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase; overflow-wrap: anywhere; }
+.kw-title { margin: 0; font: 400 1.8rem/1 var(--font-head); letter-spacing: .06em; text-transform: uppercase; }
+.kw-sub { margin: 0; font-size: .85rem; color: var(--muted); }
+.kw-sub b { color: var(--text); }
+.kw-state {
+  min-height: var(--touch); display: flex; align-items: center; justify-content: center; text-align: center; padding: 4px 10px;
+  border: 2px dashed var(--line); border-radius: 8px; font: 700 1.05rem var(--font-sub); letter-spacing: .06em; text-transform: uppercase;
+}
+.kw-state.listening { border-color: var(--amber); color: var(--amber); animation: ke-pulse 1.2s infinite; }
+.kw-state.ok { border: 2px solid #6fcf7a; color: #6fcf7a; }
+.kw-state b { font: 400 1.4rem var(--font-head); margin: 0 .3em; }
+.kw-dup { border: 2px solid var(--amber); border-radius: 8px; padding: 8px 10px; }
+.kw-dup p { margin: 0 0 8px; font-size: .85rem; color: var(--amber); }
+.kw-sub.kw-relearn { color: var(--amber); }
+.kw-table .kw-st { overflow-wrap: anywhere; }
+.kw-heard { margin: 0; font-size: .78rem; }
+.kw-actions { gap: 6px; }
+.kw-actions .ke-btn { flex: 1 1 auto; padding: 0 8px; min-width: 0; }
+.kw-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font: 700 .7rem var(--font-sub); letter-spacing: .05em; text-transform: uppercase; background: var(--amber); color: #1a1100; margin-left: 6px; }
+.kw-badge.opt { margin-left: 0; background: var(--panel-2); color: var(--muted); border: 1px solid var(--line); }
+.kw-pads > summary { min-height: var(--touch); display: flex; align-items: center; cursor: pointer; font: 400 1.05rem var(--font-head); letter-spacing: .08em; text-transform: uppercase; color: var(--accent-2); }
+
+.kw-tablewrap { position: relative; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.kw-table { width: 100%; border-collapse: collapse; font-size: .78rem; }
+.kw-table td .kw-badge { display: block; margin: 2px 0 0; width: max-content; }
+.kw-table td:first-child { min-width: 4.8em; overflow-wrap: break-word; }
+.kw-table .kw-badge { font-size: .62rem; padding: 1px 6px; }
+.kw-table th, .kw-table td { text-align: left; padding: 2px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.kw-table th { font: 700 .72rem var(--font-sub); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.kw-table td .ke-btn { min-height: var(--touch); padding: 0 8px; }
+.kw-table tr.differs td { background: rgba(255, 184, 48, .1); }
+.kw-st.learned { color: #6fcf7a; }
+.kw-st.skipped { color: var(--muted); }
+.kw-st.pending { color: var(--amber); }
+.kw-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.kw-report { width: 100%; font: .78rem monospace; color: var(--text); background: var(--bg); border: 2px solid var(--line); border-radius: 8px; }
+
+@media (prefers-reduced-motion: reduce) { .kw-state.listening { animation: none; } .kw-bar i { transition: none; } }
+@media (orientation: landscape) and (max-height: 420px) { .kw-target { font-size: 1.9rem; } }

@@ -6,7 +6,9 @@ import { dedupeNotes, lanePiece, sortNotes, type Lane } from "./laneMap";
  * `.chart` drum lanes: 0 kick, 1 red/snare, 2 yellow, 3 blue, 4 green (4-lane) or orange (5-lane),
  * 5 green (5-lane), 32 = 2x kick; cymbal flags 66/67/68 on the same tick make yellow/blue/green cymbals
  * (in `.chart`, no flag = tom). Flags 34..44 (accent/ghost) and others are ignored.
- * UNVERIFIED against a real file (fixtures/local was empty).
+ * Lane numbers, 66/67/68 flags, 32, tom default, B (thousandths of BPM) and TS (power-of-two denominator)
+ * VERIFIED against https://thenathannator.github.io/GuitarGame_ChartFormats/Chart-File-Formats/chart-format/Tracks/Drums
+ * and .../Format-Overview. Resolution has no documented default (192 here is an assumption, with a warning).
  */
 const SECTIONS: Record<string, Difficulty> = {
   expertdrums: "expert",
@@ -100,7 +102,7 @@ export function parseCloneHeroChart(text: string): ParsedChart {
     for (const [tick, slot] of byTick) for (const lane of slot.lanes) gems.push({ tick, lane, flags: slot.flags });
     perDiff.set(diff, gems);
   }
-  if (fiveLane) warnings.push("5-lane drum chart detected; lane layout is a best guess (unverified).");
+  if (fiveLane) warnings.push("5-lane drum chart detected; yellow/orange are cymbals, blue/green toms.");
 
   const out: Partial<Record<Difficulty, NoteEvent[]>> = {};
   for (const [diff, gems] of perDiff) {

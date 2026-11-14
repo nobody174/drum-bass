@@ -13,7 +13,7 @@
 
 `songTime = (ctx.currentTime - anchorCtx) + anchorSong - outputLatencySec` while playing. The anchor is reset on each (re)start. `outputLatencySec` defaults to 0 and is clamped to >= 0. Changing it while playing shifts the reported songTime but not the audio.
 
-Stem audio position = `songTime + delayMs/1000`. This matches the convention "positive song.ini delay = the chart is delayed relative to the audio" (songTime = audioPos - delay). **This sign must be checked against real Clone Hero files**; it is a one-line change in `startAt` and `durationSec`. Negative audio positions are handled by scheduling the source later.
+Stem audio position = `songTime + delayMs/1000`. This matches the convention "positive song.ini delay = the chart is delayed relative to the audio" (songTime = audioPos - delay). Checked against the Clone Hero wiki ("Positive numbers will make the chart start later", https://wiki.clonehero.net/books/guides-and-tutorials/page/songini-guide), which agrees; not yet confirmed with a real file. A flip would be a one-line change in `startAt` and `durationSec`. Negative audio positions are handled by scheduling the source later.
 
 Sources are recreated on every play/resume/seek. All stems are always started; the mix only changes per-stem gain (10 ms ramp), so switching mix while playing does not restart or move the position.
 
@@ -33,7 +33,7 @@ Mix rules: `full` plays the `full` stem alone if present, otherwise all stems. `
 
 ## NOT verified
 
-Audio sync and sound are **not** verified. Everything above is checked with a fake AudioContext and a manual clock, which proves the arithmetic and call sequence, not real playback. Not checked headlessly: actual decoding of ogg/opus/mp3 in Chrome Android, audible click/stem alignment, real output latency, behaviour of the real `AudioBufferSourceNode.onended` timing, IndexedDB behaviour (no fake-indexeddb; the IDB backend is only tested for open/retry), and the delay sign above. These need a phone test.
+Audio sync and sound are **not** verified. Everything above is checked with a fake AudioContext and a manual clock, which proves the arithmetic and call sequence, not real playback. Not checked headlessly: actual decoding of ogg/opus/mp3 in Chrome Android, audible click/stem alignment, real output latency, behaviour of the real `AudioBufferSourceNode.onended` timing, IndexedDB behaviour (no fake-indexeddb; the IDB backend is only tested for open/retry), and the delay sign with a real file (docs agree, see above). These need a phone test.
 
 ## Review fixes (post-M2)
 

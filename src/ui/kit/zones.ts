@@ -14,12 +14,40 @@ export const PIECE_SHORT: Record<PieceId, string> = {
   ride: "RIDE", splash: "SPL", china: "CHN",
 };
 
-/** Learnable zones per piece (SPEC 4.3). Everything else has a single "head" zone. */
-export function zonesFor(id: PieceId): string[] {
+/** Zone display names. Unknown zone keys (custom kits) are shown as stored. */
+export const ZONE_NAMES: Record<string, string> = {
+  head: "head", rim: "rim", bow: "bow", bell: "bell",
+  closed: "closed", open: "open", pedal: "pedal", halfOpen: "half-open", splash: "splash",
+};
+
+/** Canonical zones per piece on the real Nitro Max (docs/reference/nitro-max-kit.md). */
+function canonicalZones(id: PieceId): string[] {
   if (id === "snare") return ["head", "rim"];
-  if (id === "hihat") return ["closed", "open", "pedal"];
-  if (id === "ride") return ["bow", "bell"];
-  return ["head"];
+  if (id === "hihat") return ["closed", "open", "pedal", "halfOpen", "splash"];
+  if (id.startsWith("crash") || id === "ride" || id === "splash" || id === "china") return ["bow"];
+  return ["head"]; // kick, toms
+}
+
+/**
+ * Learnable zones for a piece: the canonical ones first, then any other key the preset's midiNotes already
+ * holds (legacy "bell" on a ride, custom zones), so custom kits keep working and nothing assigned is hidden.
+ */
+export function zonesFor(id: PieceId, midiNotes?: Record<string, number>): string[] {
+  const base = canonicalZones(id);
+  if (!midiNotes) return base;
+  return [...base, ...Object.keys(midiNotes).filter((z) => !base.includes(z))];
+}
+
+export function zoneName(zone: string): string {
+  return ZONE_NAMES[zone] ?? zone;
+}
+
+/** "Snare rim", "Hi-hat half-open", "Tom 1" (single "head" zones are implied except on the snare). */
+export function stepLabel(id: PieceId, zone: string): string {
+  const name = PIECE_NAMES[id];
+  if (zone === "head" && id !== "snare") return name;
+  if (zone === "bow" && id !== "ride") return name;
+  return `${name} ${zoneName(zone)}`;
 }
 
 export function isCymbal(id: PieceId): boolean {

@@ -1,8 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   addPiece, canAdd, clearNote, countGroup, createDefaultPreset, duplicatePreset, findConflicts,
   matchNote, movePiece, pieceGroup, PIECE_LIMITS, piecesOverlap, removePiece, renamePreset,
-  resizePiece, setLocked, setMirrored, setNote, STAGE_ASPECT, nextKitName, uniqueName,
+  resetToNitroMaxDefault, resizePiece, setLocked, setMirrored, setNote, STAGE_ASPECT, nextKitName, uniqueName,
 } from './model';
 import type { KitPreset, PieceId } from './types';
 
@@ -17,10 +18,12 @@ const inside = (p: KitPreset) =>
 
 describe('default preset', () => {
   const d = createDefaultPreset();
-  it('has the Nitro Max starter pieces', () => {
+  it('has the real Nitro Max pieces (no crash2, no tom4)', () => {
     expect(d.name).toBe('Alesis Nitro Max');
+    expect(d.template).toEqual({ id: 'nitro-max', version: 2 });
     expect(d.pieces.map((p) => p.id)).toEqual(
-      ['kick', 'snare', 'hihat', 'tom1', 'tom2', 'tom3', 'crash1', 'crash2', 'ride']);
+      ['kick', 'snare', 'hihat', 'tom1', 'tom2', 'tom3', 'crash1', 'ride']);
+    expect(d.pieces.some((p) => p.id === 'crash2' || p.id === 'tom4')).toBe(false);
     expect(d.locked).toBe(false);
     expect(d.mirrored).toBe(false);
   });
@@ -29,10 +32,26 @@ describe('default preset', () => {
     expect(piece(d, 'snare').kind).toBe('drum');
     expect(piece(d, 'crash1').kind).toBe('cymbal');
     expect(Object.keys(piece(d, 'snare').midiNotes)).toEqual(['head', 'rim']);
-    expect(Object.keys(piece(d, 'hihat').midiNotes)).toEqual(['closed', 'open', 'pedal']);
-    expect(Object.keys(piece(d, 'ride').midiNotes)).toEqual(['bow', 'bell']);
-    expect(piece(d, 'crash2').midiNotes.bow).toBe(57);
+    expect(Object.keys(piece(d, 'hihat').midiNotes)).toEqual(['closed', 'open', 'pedal', 'halfOpen', 'splash']);
+    expect(piece(d, 'hihat').kind).toBe('cymbal');
+    expect(Object.keys(piece(d, 'ride').midiNotes)).toEqual(['bow']);
     expect(piece(d, 'kick').midiNotes.head).toBe(36);
+  });
+  it('matches nitro-max-kit.json (positions, sizes, kinds, notes)', () => {
+    const json = JSON.parse(readFileSync('docs/reference/nitro-max-kit.json', 'utf8'));
+    expect(d.pieces.length).toBe(json.pieces.length);
+    for (const j of json.pieces) {
+      const p = piece(d, j.id);
+      expect([p.kind, p.x, p.y, p.size]).toEqual([j.kind, j.x, j.y, j.size]);
+      expect(p.midiNotes).toEqual(j.notes);
+    }
+  });
+  it('has the manual notes', () => {
+    expect(piece(d, 'snare').midiNotes).toEqual({ head: 38, rim: 40 });
+    expect([48, 45, 43]).toEqual(['tom1', 'tom2', 'tom3'].map((id) => piece(d, id as PieceId).midiNotes.head));
+    expect(piece(d, 'hihat').midiNotes).toEqual({ closed: 42, open: 46, pedal: 44, halfOpen: 23, splash: 21 });
+    expect(piece(d, 'crash1').midiNotes.bow).toBe(49);
+    expect(piece(d, 'ride').midiNotes.bow).toBe(51);
   });
   it('has no overlapping pieces and all pieces inside the stage', () => {
     for (const a of d.pieces) for (const b of d.pieces) if (a !== b) expect(piecesOverlap(a, b)).toBe(false);
@@ -57,7 +76,7 @@ describe('groups and limits', () => {
     expect(pieceGroup('crash2')).toBe('crash');
     expect(pieceGroup('hihat')).toBe('hihat');
     expect(countGroup(d, 'tom')).toBe(3);
-    expect(countGroup(d, 'crash')).toBe(2);
+    expect(countGroup(d, 'crash')).toBe(1);
   });
   it('exposes the limits', () => {
     expect(PIECE_LIMITS.tom).toEqual({ min: 0, max: 4 });
@@ -70,7 +89,7 @@ describe('groups and limits', () => {
     expect(addPiece(four, 'tom4')).toBe(four);
   });
   it('cannot exceed 3 crashes', () => {
-    const three = addPiece(d, 'crash3');
+    const three = addPiece(addPiece(d, 'crash2'), 'crash3');
     expect(countGroup(three, 'crash')).toBe(3);
     expect(canAdd(three, 'crash3')).toBe(false);
   });
@@ -116,7 +135,7 @@ describe('movePiece', () => {
     const m = movePiece(d, 'snare', 0.4, 0.5);
     expect(piece(m, 'snare').x).toBeCloseTo(0.4);
     expect(piece(m, 'snare').y).toBeCloseTo(0.5);
-    expect(piece(d, 'snare').x).toBe(0.3);
+    expect(piece(d, 'snare').x).toBe(0.44);
     expect(m).not.toBe(d);
   });
   it('clamps so the circle stays inside the stage', () => {
@@ -174,7 +193,7 @@ describe('lock, mirror, rename', () => {
   it('mirrors x around 0.5 and toggles the flag', () => {
     const m = setMirrored(d, true);
     expect(m.mirrored).toBe(true);
-    expect(piece(m, 'snare').x).toBeCloseTo(0.7);
+    expect(piece(m, 'snare').x).toBeCloseTo(0.56);
     expect(piece(m, 'snare').y).toBe(piece(d, 'snare').y);
     expect(inside(m)).toBe(true);
   });
@@ -196,9 +215,9 @@ describe('lock, mirror, rename', () => {
 describe('MIDI notes', () => {
   const d = createDefaultPreset();
   it('setNote stores a note without mutating', () => {
-    const s = setNote(d, 'snare', 'rim', 40);
-    expect(piece(s, 'snare').midiNotes.rim).toBe(40);
-    expect(piece(d, 'snare').midiNotes.rim).toBe(37);
+    const s = setNote(d, 'snare', 'rim', 37);
+    expect(piece(s, 'snare').midiNotes.rim).toBe(37);
+    expect(piece(d, 'snare').midiNotes.rim).toBe(40);
   });
   it('setNote can add a new zone', () => {
     expect(piece(setNote(d, 'kick', 'rim', 35), 'kick').midiNotes.rim).toBe(35);
@@ -220,9 +239,14 @@ describe('MIDI notes', () => {
   });
   it('matchNote finds piece and zone, or null', () => {
     expect(matchNote(d, 38)).toEqual({ piece: 'snare', zone: 'head' });
-    expect(matchNote(d, 37)).toEqual({ piece: 'snare', zone: 'rim' });
+    expect(matchNote(d, 40)).toEqual({ piece: 'snare', zone: 'rim' });
+    expect(matchNote(d, 23)).toEqual({ piece: 'hihat', zone: 'halfOpen' });
+    expect(matchNote(d, 21)).toEqual({ piece: 'hihat', zone: 'splash' });
+    expect(matchNote(d, 45)).toEqual({ piece: 'tom2', zone: 'head' });
+    expect(matchNote(d, 43)).toEqual({ piece: 'tom3', zone: 'head' });
+    expect(matchNote(d, 53)).toBeNull();
     expect(matchNote(d, 46)).toEqual({ piece: 'hihat', zone: 'open' });
-    expect(matchNote(d, 57)).toEqual({ piece: 'crash2', zone: 'bow' });
+    expect(matchNote(d, 57)).toBeNull();
     expect(matchNote(d, 100)).toBeNull();
   });
   it('matchNote is deterministic: first piece in order wins on a conflict', () => {
@@ -258,7 +282,7 @@ describe('lock rule for structure', () => {
   });
   it('rename, notes and mirror still work when locked', () => {
     expect(renamePreset(l, 'X').name).toBe('X');
-    expect(setNote(l, 'snare', 'head', 40).pieces[1]!.midiNotes.head).toBe(40);
+    expect(setNote(l, 'snare', 'head', 41).pieces[1]!.midiNotes.head).toBe(41);
     expect(setMirrored(l, true).mirrored).toBe(true);
   });
 });
@@ -273,5 +297,29 @@ describe('unique names', () => {
     expect(uniqueName('A copy', ['A'])).toBe('A copy');
     expect(uniqueName('A copy', ['A', 'a copy'])).toBe('A copy 2');
     expect(uniqueName('A copy', ['A copy', 'A copy 2'])).toBe('A copy 3');
+  });
+});
+
+describe('user-added pieces still work', () => {
+  it('can add crash2 and tom4 with their own notes, no conflicts', () => {
+    const k = addPiece(addPiece(createDefaultPreset(), 'crash2'), 'tom4');
+    expect(piece(k, 'crash2').midiNotes.bow).toBe(57);
+    expect(piece(k, 'tom4').midiNotes.head).toBe(41);
+    expect(findConflicts(k)).toEqual([]);
+    expect(inside(k)).toBe(true);
+  });
+});
+
+describe('resetToNitroMaxDefault', () => {
+  it('keeps id and name, replaces pieces, locked and mirrored', () => {
+    const custom = setLocked(setMirrored(addPiece(renamePreset(createDefaultPreset(), 'Mine'), 'tom4'), true), true);
+    const r = resetToNitroMaxDefault(custom);
+    expect(r.id).toBe(custom.id);
+    expect(r.name).toBe('Mine');
+    expect(r.locked).toBe(false);
+    expect(r.mirrored).toBe(false);
+    expect(r.template).toEqual({ id: 'nitro-max', version: 2 });
+    expect(r.pieces).toEqual(createDefaultPreset().pieces);
+    expect(custom.pieces.some((p) => p.id === 'tom4')).toBe(true); // input untouched
   });
 });

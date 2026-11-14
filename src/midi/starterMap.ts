@@ -1,19 +1,29 @@
 /**
- * Starter General MIDI drum mapping from SPEC section 4.3.
- * UNVERIFIED against the real Nitro Max. MIDI learn / the MIDI monitor decide.
+ * Default MIDI map of the real Alesis Nitro Max (user guide section 5.2, see
+ * docs/reference/nitro-max-kit.json). The numbers come from the manual's PDF text and are
+ * UNVERIFIED on hardware: MIDI learn / the MIDI monitor decide.
  */
 export const STARTER_NOTES = {
   kick: 36,
   snare: 38,
-  snareRim: 37,
+  snareRim: 40,
   tom1: 48,
-  tom2: 47,
-  tom3: 45,
-  tom4: 43,
+  tom2: 45,
+  tom3: 43,
   hihatClosed: 42,
-  hihatPedal: 44,
+  hihatHalfOpen: 23,
   hihatOpen: 46,
+  hihatPedal: 44,
+  hihatSplash: 21,
   crash1: 49,
   ride: 51,
-  rideBell: 53,
+} as const;
+
+/**
+ * Notes for pieces the real kit does not have. Only used when a user adds such a piece in the
+ * kit editor (tom4 expansion input, crash2 on CYM 2). Not part of the Nitro Max map.
+ */
+export const EXTRA_PIECE_NOTES = {
+  tom4: 41,
+  crash2: 57,
 } as const;

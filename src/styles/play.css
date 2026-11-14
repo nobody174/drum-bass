@@ -33,6 +33,12 @@
   background: rgba(20,20,24,.75); border: 2px solid var(--line); border-radius: 50%; cursor: pointer; color: var(--text);
   display: grid; place-items: center;
 }
+.pl-pause { z-index: 3; }
+.pl-mode {
+  position: absolute; top: 8px; right: 64px; z-index: 3; min-width: var(--touch); height: var(--touch); padding: 0 12px;
+  background: rgba(20,20,24,.75); border: 2px solid var(--line); border-radius: 24px; cursor: pointer; color: var(--text);
+  font-family: var(--font-sub); text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; touch-action: manipulation;
+}
 .pl-pause svg { width: 22px; height: 22px; fill: currentColor; }
 .pl-pads { display: flex; gap: 4px; padding: 4px; flex: none; touch-action: none; }
 .pl-pad {

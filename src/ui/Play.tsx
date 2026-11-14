@@ -5,12 +5,14 @@ import { Judge, type JudgeSummary } from "../game/judge";
 import { buildTimeline, songTempo, type Timeline } from "../game/timeline";
 import { kitStore, matchNote, type KitPiece, type KitPreset } from "../kit";
 import { inputBus, startVirtualKeyboard, stopVirtualKeyboard } from "../midi";
-import { createLanesRenderer, type LanesRenderer } from "../render/lanes";
+import { createLanesRenderer } from "../render/lanes";
+import { createKitViewRenderer, type PlayRenderer } from "../render/kitView";
 import { bestFor, songStore } from "../storage/songs";
 import Results from "./Results";
 import { silentStem } from "./play/silentWav";
 import { PadRow } from "./play/PadRow";
-import { parseParams, type PlayParams } from "./play/params";
+import { parseDisplayMode, loadApproach, loadDisplayMode, parseParams, saveDisplayMode, type DisplayMode, type PlayParams } from "./play/params";
+import { clampApproach } from "../render/kitGeometry";
 import "../styles/play.css";
 
 type Phase = "loading" | "ready" | "playing" | "paused" | "results" | "error";
@@ -24,12 +26,28 @@ interface Session {
   transport: TransportImpl;
   judge: Judge;
   timeline: Timeline;
-  renderer: LanesRenderer;
+  /** Per-frame hook for the active renderer: advances scoring and returns song time. */
+  tick: () => number;
+  countIn: { beats: number; beatSec: number } | undefined;
   params: PlayParams;
   bpm: number;
   prevBest: number;
   /** Click-only runs are practice and never recorded as a best. */
   ranked: boolean;
+}
+
+/** Keeps `?v=` in the address bar in sync without a hashchange (which would rebuild the run). */
+function writeDisplayToUrl(mode: DisplayMode): void {
+  try {
+    const h = location.hash;
+    const q = h.indexOf("?");
+    const base = q < 0 ? h : h.slice(0, q);
+    const params = new URLSearchParams(q < 0 ? "" : h.slice(q + 1));
+    params.set("v", mode);
+    history.replaceState(history.state, "", `${location.pathname}${location.search}${base}?${params.toString()}`);
+  } catch {
+    /* ignore: the persisted setting still applies */
+  }
 }
 
 export default function Play({ songId, query }: { songId: string; query: URLSearchParams }) {
@@ -38,6 +56,10 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
   const [lanes, setLanes] = useState<readonly KitPiece[]>([]);
   const [summary, setSummary] = useState<JudgeSummary | null>(null);
   const [run, setRun] = useState(0);
+  const [sessVer, setSessVer] = useState(0);
+  const [display, setDisplay] = useState<DisplayMode>(() => parseDisplayMode(query.get("v")) ?? loadDisplayMode());
+  const approachRef = useRef(query.get("a") ? clampApproach(Number(query.get("a"))) : loadApproach());
+  const rendererRef = useRef<PlayRenderer | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const phaseRef = useRef<Phase>("loading");
   const sess = useRef<Session | null>(null);
@@ -54,7 +76,6 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
   useEffect(() => {
     let alive = true;
     let transport: TransportImpl | null = null;
-    let renderer: LanesRenderer | null = null;
     let offEnded: (() => void) | null = null;
     go("loading");
     setSummary(null);
@@ -66,7 +87,7 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
       if (!alive || !s || phaseRef.current === "results") return;
       s.judge.finish();
       s.transport.pause();
-      s.renderer.stop();
+      rendererRef.current?.stop();
       setSummary(s.judge.summary());
       go("results");
     };
@@ -85,12 +106,11 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
         setLanes(timeline.lanes);
 
         const laneIndex = new Map(timeline.lanes.map((l, i) => [l.id, i]));
-        let sink: LanesRenderer | null = null; // judge events feed the renderer created just below
         const judge = new Judge(timeline.notes, {
           onEvent: (e) => {
             const li = laneIndex.get(e.piece);
-            if (li !== undefined) sink?.judgement(li, e.kind);
-            if (e.kind !== "stray") sink?.setCombo(e.combo);
+            if (li !== undefined) rendererRef.current?.judgement(li, e.kind);
+            if (e.kind !== "stray") rendererRef.current?.setCombo(e.combo);
           },
         });
         transport = createTransport();
@@ -100,25 +120,20 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
         transport.setClickTrack({ points: tempo.points, beatsPerBar: tempo.beatsPerBar });
         transport.setMix(params.mix);
 
-        renderer = createLanesRenderer(canvasRef.current!, {
-          lanes: timeline.lanes,
-          notes: { times: timeline.times, laneOf: timeline.laneOf, state: judge.state },
-          durationSec: timeline.lastTime + END_TAIL_SEC,
-          reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
-          countIn: params.countIn > 0 ? { beats: params.countIn, beatSec: 60 / tempo.startBpm } : undefined,
-        });
-        sink = renderer;
-        sess.current = { transport, judge, timeline, renderer, params, bpm: tempo.startBpm, prevBest: bestFor(song, params.difficulty), ranked: params.mix !== "clickonly" };
-        offEnded = transport.onEnded(finishRun);
-        renderer.start(() => {
-          const s = sess.current!;
+        const countIn = params.countIn > 0 ? { beats: params.countIn, beatSec: 60 / tempo.startBpm } : undefined;
+        const tick = () => {
+          const s = sess.current;
+          if (!s) return 0;
           const t = s.transport.songTime;
           if (phaseRef.current === "playing") {
             s.judge.update(t);
             if (t > s.timeline.lastTime + END_TAIL_SEC) finishRun();
           }
           return t;
-        });
+        };
+        sess.current = { transport, judge, timeline, tick, countIn, params, bpm: tempo.startBpm, prevBest: bestFor(song, params.difficulty), ranked: params.mix !== "clickonly" };
+        offEnded = transport.onEnded(finishRun);
+        setSessVer((n) => n + 1); // the renderer effect picks the session up
         go("ready");
       } catch (e) {
         if (!alive) return;
@@ -130,12 +145,46 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
     return () => {
       alive = false;
       offEnded?.();
-      renderer?.destroy();
+      rendererRef.current?.destroy();
+      rendererRef.current = null;
       transport?.dispose();
       sess.current = null;
       stopVirtualKeyboard();
     };
   }, [songId, queryStr, run]);
+
+  // Renderer: created per (display mode, session). Switching only swaps this; transport and judge keep running.
+  useEffect(() => {
+    const s = sess.current;
+    const canvas = canvasRef.current;
+    const preset = presetRef.current;
+    if (!s || !canvas || !preset || sessVer === 0) return;
+    const common = {
+      notes: { times: s.timeline.times, laneOf: s.timeline.laneOf, state: s.judge.state },
+      durationSec: s.timeline.lastTime + END_TAIL_SEC,
+      reducedMotion: window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+      countIn: s.countIn,
+    };
+    const r: PlayRenderer = display === "kit"
+      ? createKitViewRenderer(canvas, { ...common, pieces: preset.pieces, lanes: s.timeline.lanes, approachSec: approachRef.current })
+      : createLanesRenderer(canvas, { ...common, lanes: s.timeline.lanes });
+    r.setCombo(s.judge.combo);
+    r.setPaused(phaseRef.current === "paused");
+    rendererRef.current = r;
+    r.start(s.tick);
+    if (phaseRef.current === "results") r.stop();
+    return () => {
+      r.destroy();
+      if (rendererRef.current === r) rendererRef.current = null;
+    };
+  }, [display, sessVer]);
+
+  const switchDisplay = () => {
+    const next: DisplayMode = display === "kit" ? "lanes" : "kit";
+    saveDisplayMode(next);
+    writeDisplayToUrl(next);
+    setDisplay(next);
+  };
 
   // Live input: pads, keyboard and MIDI all arrive through the bus.
   useEffect(() => {
@@ -193,7 +242,7 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
     try {
       // play() must run synchronously inside this tap so the browser lets audio start.
       await s.transport.play({ countInBeats: s.params.countIn, bpm: s.bpm });
-      s.renderer.setPaused(false);
+      rendererRef.current?.setPaused(false);
       go("playing");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -205,7 +254,7 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
     const s = sess.current;
     if (!s || phaseRef.current !== "playing") return;
     s.transport.pause();
-    s.renderer.setPaused(true);
+    rendererRef.current?.setPaused(true);
     go("paused");
   }
 
@@ -214,7 +263,7 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
     if (!s) return;
     try {
       await s.transport.play({});
-      s.renderer.setPaused(false);
+      rendererRef.current?.setPaused(false);
       go("playing");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -231,8 +280,13 @@ export default function Play({ songId, query }: { songId: string; query: URLSear
 
   return (
     <div class="play">
-      <canvas ref={canvasRef} aria-label="Falling notes" />
+      <canvas key={display} ref={canvasRef} aria-label={display === "kit" ? "Notes on the kit" : "Falling notes"} />
       <PadRow lanes={lanes} />
+      {(phase === "ready" || phase === "playing" || phase === "paused") && (
+        <button class="pl-mode" aria-label={display === "kit" ? "Switch to lanes view" : "Switch to kit view"} onClick={switchDisplay}>
+          {display === "kit" ? "Lanes" : "Kit view"}
+        </button>
+      )}
       {phase === "playing" && (
         <button class="pl-pause" aria-label="Pause" onClick={pause}>
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z" /></svg>
